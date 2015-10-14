@@ -1,0 +1,33 @@
+#ifndef FETCH_H
+#define FETCH_H
+
+#include <vector>
+#include <string>
+#include "Index.hpp"
+#include "Monitor.hpp"
+
+class Fetch
+{
+	private:
+	Index *index;
+	Monitor *monitor;
+	std::vector <std::streampos>::size_type end_index;
+	std::vector <std::streampos>::size_type begin_index;
+	std::vector <std::streampos>::size_type size_index;
+	std::streampos file_size;
+	int policy;
+	std::streampos policy_limit;
+	char* buffer;
+	public:
+	Fetch(std::string policy, std::string policy_limit, Index *index, Monitor *monitor);
+	~Fetch();
+	std::streampos make_chunk();
+	std::vector<std::streampos>::size_type Index_end();
+	std::vector<std::streampos>::size_type Index_begin();
+	std::streampos Offset_begin();
+	std::streampos Offset_end();
+	char* Get_chunk();
+	int rewind(std::vector<std::streampos>::size_type offset);
+};
+
+#endif
