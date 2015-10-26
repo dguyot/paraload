@@ -18,6 +18,11 @@ using namespace::std;
 
 ofstream report;
 
+/**
+ * function to run paraload in background (like a daemon)
+ * redirect cerr to the report file
+ */
+ 
 static int belzebuth(Cline* cline)
 {
 	
@@ -46,6 +51,10 @@ static int belzebuth(Cline* cline)
 }
 
 
+/**
+ * Main entry for server
+ */
+ 
 static int server(Cline* cline)
 {
 	streampos chunk_size;
@@ -54,6 +63,7 @@ static int server(Cline* cline)
 	std::vector<std::streampos>::size_type current_index;
 	long current_round;
 	long nb_round;
+	long nb_entries;
 	int action;
 	time_t timer;
 	time_t begin_time;
@@ -79,6 +89,7 @@ static int server(Cline* cline)
 	Comm_S *comm_s = new Comm_S(conf, cline);
 	
 	nb_round = atol(conf->getconf("round").c_str());
+	nb_entries = (long) index->getsize();
 	current_round = 0;
 	
 	ofstream out((cline->getcmd("output")).c_str(), ofstream::app);
@@ -87,22 +98,62 @@ static int server(Cline* cline)
 	if (cline->getcmd("bg") == "yes") belzebuth(cline);
 	cerr << "Starting round " << current_round << " / " << nb_round << endl;
 
-	while ((current_round < nb_round) && ((monitor->count_todo() != 0) || (monitor->count_inprogress() != 0)))
+	
+	/**
+	 * Principal loop, try to do each job until all jobs are done or the round exeded the number of round alowed
+	 * if a client is disconnected, his job is immediately given to the next client
+	 * if a job fail (return != 0), the job is taged as 'failed' and will be retried at the next round
+	 */
+	while ((current_round < nb_round) && (monitor->count_done() != nb_entries))
 	{
+		/**
+		 * if we are at the end of the jobs try another round
+		 * change all the FAIL job state to TODO, to try another time the computation
+		 * rewind to the begining of the job list
+		 */
+		if (fetch->Index_end() >= index->getsize() || (monitor->count_todo() == 0))
+		{
+			cerr << "Rewinding list of jobs" << endl << endl;
+			cerr << "TODO : " << monitor->count_todo() << endl;
+			cerr << "INPROGRESS : " << monitor->count_inprogress() << endl;
+			cerr << "DONE : " << monitor->count_done() << endl;
+			cerr << "FAIL : " << monitor->count_fail() << endl;
+			cerr << endl;
+			cerr << "Trying to recompute all failed jobs" << endl << endl;;
+			
+			monitor->chgstate(FAIL,TODO);
+			fetch->rewind(0);
+			current_round++;
+			cerr << "Starting round " << current_round << " / " << nb_round << endl;
+		}
+		/**
+		* if there is nothing to do, kill the client immediately
+		*/
+		if (monitor->count_todo() == 0) comm_s->set_signal_flag(PLD_SIG_STOP);
+		else comm_s->set_signal_flag(PLD_SIG_OK);
+		/*
 		if (monitor->count_todo() == 0)
+		{
 			comm_s->set_signal_flag(PLD_SIG_STOP);
+			cerr << "PLD_SIG_STOP" << endl;
+		}
 		else
 		{
 			comm_s->set_signal_flag(PLD_SIG_OK);
-		
-			if (fetch->Index_end() >= index->getsize())
-			{
-				cerr << "Rewinding list of jobs" << endl;
-				fetch->rewind(0);
-				current_round++;
-				cerr << "Starting round " << current_round << " / " << nb_round << endl;
-			}
+			cerr << "PLD_SIG_OK" << endl;
 		}
+		*/
+		
+		/**
+		 * wait an action : 
+		 * 	-a connexion request
+		 * 	-a disconnexion
+		 * 	-some job
+		 * 	-a result
+		 * 	-a ping
+		 * 	-info
+		 * the action is returned
+		 */
 		action = comm_s->wait();
 
 		switch (action)
@@ -110,13 +161,13 @@ static int server(Cline* cline)
 			case PLD_GET:
 			{
 				fetch->make_chunk();
-				
 				if (comm_s->send(fetch->Index_begin(), fetch->Index_end(), fetch->Offset_end()-fetch->Offset_begin(), fetch->Get_chunk()) == PLD_OK)
 				{
 					//monitor->tag_segment(INPROGRESS, fetch->Index_begin(), fetch->Index_end());
 					monitor->add_addr_idx(comm_s->get_ip_int(),comm_s->get_port(), fetch->Index_begin(), fetch->Index_end());
 				}
 				else fetch->rewind(fetch->Index_begin());
+				//cerr << "GET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 				break;
 			}
 			case PLD_PUT:
@@ -143,9 +194,11 @@ static int server(Cline* cline)
 					else
 					{
 						time(&timer);
-						monitor->tag_segment(TODO, comm_s->get_idx_begin(), comm_s->get_idx_end());
+						//monitor->tag_segment(TODO, comm_s->get_idx_begin(), comm_s->get_idx_end());
+						monitor->tag_segment(FAIL, comm_s->get_idx_begin(), comm_s->get_idx_end());
 						cerr << "!!\t" << comm_s->get_ip() << "::" << comm_s->get_port() << "\t[" << comm_s->get_idx_begin() << "," << comm_s->get_idx_end() << "]\t" << comm_s->get_rt_value() << "\t" << timer - begin_time << "\t" << asctime(localtime(&timer));
 					}
+					//cerr << "PUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 
 				}
 				break;
@@ -183,7 +236,14 @@ static int server(Cline* cline)
 			}
 		}
 	}
-	
+
+
+	/**
+	 * end of the principal loop 
+	 * kill each client with PLD_SIG_STOP (normaly SIGINT=15)
+	 * here it is impossible to ask for job (there is no GET)
+	 * because connexion request will kill immediately the client
+	 */
 	comm_s->set_signal_flag(PLD_SIG_STOP);
 	cerr << "End of run, killing all remaining clients" << endl;
 	while (comm_s->get_nb_clients())
@@ -191,6 +251,38 @@ static int server(Cline* cline)
 		action = comm_s->wait();
 		switch (action)
 		{
+			case PLD_PUT:
+			{
+				if (comm_s->receive() == PLD_OK)
+				{
+					offout_b = out.tellp();
+					out << comm_s->getres();
+					out.flush();
+					offout_e = out.tellp();
+					log << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t";
+					log << index->getpos(comm_s->get_idx_begin()) << "\t" << index->getpos(comm_s->get_idx_end()) << "\t";
+					log << offout_b << "\t" << offout_e << "\t";
+					log << comm_s->get_rt_value() << "\t";
+					log << comm_s->get_ip() << "\t";
+					log << comm_s->get_rtime() << "\t" << comm_s->get_utime() << "\t" << comm_s->get_ktime() << endl;
+					log.flush();
+					
+					if (comm_s->get_rt_value() == 0)
+					{
+						monitor->rem_addr_idx(comm_s->get_ip_int(),comm_s->get_port());
+						//monitor->tag_segment(DONE, comm_s->get_idx_begin(), comm_s->get_idx_end());
+					}
+					else
+					{
+						time(&timer);
+						//monitor->tag_segment(TODO, comm_s->get_idx_begin(), comm_s->get_idx_end());
+						monitor->tag_segment(FAIL, comm_s->get_idx_begin(), comm_s->get_idx_end());
+						cerr << "!!\t" << comm_s->get_ip() << "::" << comm_s->get_port() << "\t[" << comm_s->get_idx_begin() << "," << comm_s->get_idx_end() << "]\t" << comm_s->get_rt_value() << "\t" << timer - begin_time << "\t" << asctime(localtime(&timer));
+					}
+
+				}
+				break;
+			}
 			case PLD_DEC:
 			{
 				monitor->exists_addr_idx(comm_s->get_ip_int(),comm_s->get_port());
@@ -219,7 +311,7 @@ static int server(Cline* cline)
 		}
 	}
 	
-	cerr << "Run terminated : " << monitor->count_todo() << " remaining jobs" << endl;
+	cerr << "Run terminated : " << monitor->count_todo() << " remaining jobs " << monitor->count_fail() << " failed jobs" << endl;
 	delete conf;
 	delete index;
 	delete monitor;
@@ -227,6 +319,11 @@ static int server(Cline* cline)
 	delete comm_s;
 	return(EXIT_SUCCESS);
 }
+
+/**
+ * signal handler to clean all temporary files before stoping
+ * only for the client
+ */
 
 static void client_signal_handler(int n)
 {
@@ -238,6 +335,9 @@ static void client_signal_handler(int n)
 	siglongjmp(stack_client_save,1);
 }
 
+/**
+ * Main entry for client
+ */
 
 static int client(Cline* cline)
 {

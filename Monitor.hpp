@@ -17,6 +17,7 @@ class Monitor
 	long todo;
 	long inprogress;
 	long done;
+	long fail;
 	std::string log_file;
 	public:
 	Monitor(Index*,Cline*);
@@ -29,5 +30,7 @@ class Monitor
 	long count_todo();
 	long count_inprogress();
 	long count_done();
+	long count_fail();
+	int chgstate(int state1, int state2);
 };
 #endif

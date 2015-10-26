@@ -1,6 +1,13 @@
 #include "Comm_C.hpp"
 #include <cstdio>
 
+/**
+ * Constructor
+ * Initialize pointer, structures
+ * create temporary files names
+ * get port, hostname of the server
+ */
+
 Comm_C::Comm_C(Cline* cline)
 {
 	cmd = NULL;
@@ -20,6 +27,12 @@ Comm_C::Comm_C(Cline* cline)
 	C_connect(hote,port,&sock);
 	C_auth(sock);
 }
+
+/**
+ * Destructor
+ * remove temporary files
+ * free all allocated memory
+ */
 
 Comm_C::~Comm_C()
 {

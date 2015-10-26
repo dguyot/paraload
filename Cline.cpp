@@ -213,12 +213,12 @@ int Cline::check()
 		port_number = stoi(port);
 		if (port_number > 65535)
 		{
-			cerr << "Port number must be less than 65535" << endl;
+			cerr << "Port number must be smaller than 65535" << endl;
 			return(1);
 		}
 		if (port_number < 10000)
 		{
-			cerr << "Port number must be more than 10000" << endl;
+			cerr << "Port number must be greater than 10000" << endl;
 			return(1);
 		}
 		

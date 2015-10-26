@@ -12,7 +12,7 @@
 #define TODO 0
 #define INPROGRESS 1
 #define DONE 2
-
+#define FAIL 3
 
 
 #endif

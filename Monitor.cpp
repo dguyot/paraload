@@ -20,6 +20,7 @@ Monitor::Monitor(Index* index,Cline* cline)
 	todo = (long)size;
 	inprogress = 0;
 	done = 0;
+	fail = 0;
 	states.shrink_to_fit();
 	cerr << "Monitoring structure done." << endl << endl;
 	restart();
@@ -37,12 +38,14 @@ int Monitor::tag_segment(int state, vector<streampos>::size_type begin,vector<st
 		if (states[pos] == TODO) todo--;
 		else if (states[pos] == INPROGRESS) inprogress--;
 		else if (states[pos] == DONE) done--;
+		else if (states[pos] == FAIL) fail--;
 		
 		states[pos] = state;
 		
 		if (states[pos] == TODO) todo++;
 		else if (states[pos] == INPROGRESS) inprogress++;
 		else if (states[pos] == DONE) done++;
+		else if (states[pos] == FAIL) fail++;
 		
 	}
 	
@@ -147,4 +150,36 @@ long Monitor::count_inprogress()
 long Monitor::count_done()
 {
 	return(done);
+}
+
+long Monitor::count_fail()
+{
+	return(fail);
+}
+
+
+int Monitor::chgstate(int state1, int state2)
+{
+	vector<streampos>::size_type pos;
+	vector<streampos>::size_type end;
+	
+	end = states.size();
+	
+	for(pos = 0; pos < end; pos++)
+	{	
+		if (states[pos] == state1)
+		{
+			if (state1 == FAIL) fail--;
+			else if (state1 == TODO) todo--;
+			else if (state1 == INPROGRESS) inprogress--;
+			else if (state1 == DONE) done--;
+			states[pos] = state2;
+			if (state2 == TODO) todo++;
+			else if (state2 == INPROGRESS) inprogress++;
+			else if (state2 == DONE) done++;
+			else if (state2 == FAIL) fail++;
+		}
+	}
+	
+	return(0);
 }

@@ -39,7 +39,7 @@ if ($help_flag)
 
 if ($only_check && $quiet_flag)
 {
-	print "The check flag and the quiet flag are imcompatibles\n"
+	print "The check flag and the quiet flag are not compatibles\n"
 }
 
 
