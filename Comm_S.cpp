@@ -216,12 +216,12 @@ char* Comm_S::get_ip()
 	return(current_ip);
 }
 
-int Comm_S::get_ip_int()
+uint32_t Comm_S::get_ip_int()
 {
 	return(current_ip_int);
 }
 
-int Comm_S::get_port()
+uint32_t Comm_S::get_port()
 {
 	return(current_port);
 }

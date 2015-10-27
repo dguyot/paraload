@@ -60,8 +60,8 @@ class Comm_S
 	off_t get_idx_end();
 	int get_rt_value();
 	char* get_ip();
-	int get_ip_int();
-	int get_port();
+	uint32_t get_ip_int();
+	uint32_t get_port();
 	double get_rtime();
 	double get_utime();
 	double get_ktime();
