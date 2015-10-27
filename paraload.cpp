@@ -131,18 +131,7 @@ static int server(Cline* cline)
 		*/
 		if (monitor->count_todo() == 0) comm_s->set_signal_flag(PLD_SIG_STOP);
 		else comm_s->set_signal_flag(PLD_SIG_OK);
-		/*
-		if (monitor->count_todo() == 0)
-		{
-			comm_s->set_signal_flag(PLD_SIG_STOP);
-			cerr << "PLD_SIG_STOP" << endl;
-		}
-		else
-		{
-			comm_s->set_signal_flag(PLD_SIG_OK);
-			cerr << "PLD_SIG_OK" << endl;
-		}
-		*/
+
 		
 		/**
 		 * wait an action : 
@@ -231,7 +220,7 @@ static int server(Cline* cline)
 			}
 			case PLD_INFO:
 			{
-				comm_s->info(monitor->count_todo(), monitor->count_inprogress(), monitor->count_done());
+				comm_s->info(monitor->count_todo(), monitor->count_inprogress(), monitor->count_done(), monitor->count_fail());
 				break;
 			}
 		}
@@ -305,7 +294,7 @@ static int server(Cline* cline)
 			}
 			case PLD_INFO:
 			{
-				comm_s->info(monitor->count_todo(), monitor->count_inprogress(), monitor->count_done());
+				comm_s->info(monitor->count_todo(), monitor->count_inprogress(), monitor->count_done(), monitor->count_fail());
 				break;
 			}
 		}

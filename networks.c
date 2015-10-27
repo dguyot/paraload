@@ -891,7 +891,7 @@ int S_pong(int sock)
 //return 0->Ok else->Nok
 //out : nothing
 
-int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, int nthclients, struct id_client *tabclients)
+int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail, int nthclients, struct id_client *tabclients)
 {
 	int i;
 	size_t write_len = 0;
@@ -931,6 +931,8 @@ int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, int nt
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &done, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
+	write_len = write_sock(sock_c, &fail, sizeof(uint64_t));
+	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &nthclients, sizeof(int));
 	if (write_len != 0) return(PLD_NOK);
 	
@@ -951,6 +953,7 @@ int C_info(int sock)
 	uint64_t todo;
 	uint64_t inprogress;
 	uint64_t done;
+	uint64_t fail;
 	int nthclients;
 	struct sockaddr_in c_addr;
 	uint32_t port;
@@ -967,7 +970,11 @@ int C_info(int sock)
 	rt = read_sock(sock, &done, sizeof(uint64_t));
 	if (rt != 0) return(PLD_NOK);
 	printf("Done:\t%"PRIu64"\n",done);
-
+	
+	rt = read_sock(sock, &fail, sizeof(uint64_t));
+	if (rt != 0) return(PLD_NOK);
+	printf("Fail:\t%"PRIu64"\n",fail);
+	
 	rt = read_sock(sock, &nthclients, sizeof(int));
 	if (rt != 0) return(PLD_NOK);
 	printf("Number of clients:\t%i\n",nthclients);

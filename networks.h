@@ -81,7 +81,7 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 int C_ping(int sock);
 int S_pong(int sock);
 
-int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, int nthclients, struct id_client *tabclients);
+int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail, int nthclients, struct id_client *tabclients);
 int C_info(int sock);
 
 

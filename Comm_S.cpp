@@ -305,9 +305,9 @@ int Comm_S::remove_client()
 	return(0);
 }
 
-int Comm_S::info(int todo, int inprogress, int done)
+int Comm_S::info(uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail)
 {
 	int rt;
-	rt = S_info(sock_c, todo, inprogress, done, nthclients, tabclients);
+	rt = S_info(sock_c, todo, inprogress, done, fail, nthclients, tabclients);
 	return(rt);
 }

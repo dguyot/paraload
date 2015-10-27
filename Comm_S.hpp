@@ -52,7 +52,7 @@ class Comm_S
 	int send(off_t begin, off_t end, size_t size, const char* chunk);
 	int receive();
 	int pong();
-	int info(int todo, int inprogress, int done);
+	int info(uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail);
 	int set_signal_flag(int signal);
 	int get_signal_flag();
 	char* getres();
