@@ -17,7 +17,7 @@ Monitor::Monitor(Index* index,Cline* cline)
 		states.push_back(TODO);
 	}
 	
-	todo = (long)size;
+	todo = (uint64_t)size;
 	inprogress = 0;
 	done = 0;
 	fail = 0;
@@ -59,18 +59,18 @@ int Monitor::atomic_state(std::vector<std::streampos>::size_type which)
 	return states[which];
 }
 
-int Monitor::add_addr_idx(int ip, int port, std::vector<std::streampos>::size_type begin, std::vector<std::streampos>::size_type end)
+int Monitor::add_addr_idx(uint32_t ip, uint32_t port, std::vector<std::streampos>::size_type begin, std::vector<std::streampos>::size_type end)
 {
-	long key = ((long)ip << 32) + (long)port;
+	uint64_t key = ((uint64_t)ip << 32) + (uint64_t)port;
 	pair <std::vector<std::streampos>::size_type, std::vector<std::streampos>::size_type> segment (begin,end);
 	current_addr_idx[key] = segment;
 	tag_segment(INPROGRESS, segment.first, segment.second);
 	return(0);
 }
 
-std::vector<std::streampos>::size_type Monitor::rem_addr_idx(int ip, int port)
+std::vector<std::streampos>::size_type Monitor::rem_addr_idx(uint32_t ip, uint32_t port)
 {
-	long key = ((long)ip << 32) + (long)port;
+	uint64_t key = ((uint64_t)ip << 32) + (uint64_t)port;
 	pair <std::vector<std::streampos>::size_type, std::vector<std::streampos>::size_type> segment;
 	segment = current_addr_idx[key];
 	current_addr_idx.erase(key);
@@ -79,11 +79,11 @@ std::vector<std::streampos>::size_type Monitor::rem_addr_idx(int ip, int port)
 	return(segment.first);
 }
 
-std::vector<std::streampos>::size_type Monitor::exists_addr_idx(int ip, int port)
+std::vector<std::streampos>::size_type Monitor::exists_addr_idx(uint32_t ip, uint32_t port)
 {
-	std::unordered_map <long, std::pair < std::vector<std::streampos>::size_type, std::vector<std::streampos>::size_type>>::const_iterator got;
+	std::unordered_map <uint64_t, std::pair < std::vector<std::streampos>::size_type, std::vector<std::streampos>::size_type>>::const_iterator got;
 	pair <std::vector<std::streampos>::size_type, std::vector<std::streampos>::size_type> segment;
-	long key = ((long)ip << 32) + (long)port;
+	uint64_t key = ((uint64_t)ip << 32) + (uint64_t)port;
 	got = current_addr_idx.find(key);
 	if (got == current_addr_idx.end())
 	{
@@ -137,22 +137,22 @@ int Monitor::restart()
 }
 
 
-long Monitor::count_todo()
+uint64_t Monitor::count_todo()
 {
 	return(todo);
 }
 
-long Monitor::count_inprogress()
+uint64_t Monitor::count_inprogress()
 {
 	return(inprogress);
 }
 
-long Monitor::count_done()
+uint64_t Monitor::count_done()
 {
 	return(done);
 }
 
-long Monitor::count_fail()
+uint64_t Monitor::count_fail()
 {
 	return(fail);
 }

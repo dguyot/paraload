@@ -38,8 +38,8 @@ class Comm_S
 	int nthclients;
 	
 	char* current_ip;
-	int current_ip_int;
-	int current_port;
+	uint32_t current_ip_int;
+	uint32_t current_port;
 	rlim_t max_open_files;
 	int max_sockets;
 	

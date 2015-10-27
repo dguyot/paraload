@@ -891,7 +891,7 @@ int S_pong(int sock)
 //return 0->Ok else->Nok
 //out : nothing
 
-int S_info(int sock_c, long todo, long inprogress, long done, int nthclients, struct id_client *tabclients)
+int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, int nthclients, struct id_client *tabclients)
 {
 	int i;
 	size_t write_len = 0;
@@ -899,9 +899,9 @@ int S_info(int sock_c, long todo, long inprogress, long done, int nthclients, st
 	int dsock = dup(sock_c);
 	FILE* fsock = fdopen(dsock,"w");
 	
-	write_len += fwrite(&todo, sizeof(long), 1, fsock);
-	write_len += fwrite(&inprogress, sizeof(long), 1, fsock);
-	write_len += fwrite(&done, sizeof(long), 1, fsock);
+	write_len += fwrite(&todo, sizeof(uint64_t), 1, fsock);
+	write_len += fwrite(&inprogress, sizeof(uint64_t), 1, fsock);
+	write_len += fwrite(&done, sizeof(uint64_t), 1, fsock);
 	write_len += fwrite(&nthclients, sizeof(int), 1, fsock);
 
 	if (write_len != 4)
@@ -925,11 +925,11 @@ int S_info(int sock_c, long todo, long inprogress, long done, int nthclients, st
 	else return(PLD_OK);
 	*/
 	
-	write_len = write_sock(sock_c, &todo, sizeof(long));
+	write_len = write_sock(sock_c, &todo, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
-	write_len = write_sock(sock_c, &inprogress, sizeof(long));
+	write_len = write_sock(sock_c, &inprogress, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
-	write_len = write_sock(sock_c, &done, sizeof(long));
+	write_len = write_sock(sock_c, &done, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &nthclients, sizeof(int));
 	if (write_len != 0) return(PLD_NOK);
@@ -948,25 +948,25 @@ int C_info(int sock)
 {
 	int i;
 	int rt;
-	long todo;
-	long inprogress;
-	long done;
+	uint64_t todo;
+	uint64_t inprogress;
+	uint64_t done;
 	int nthclients;
 	struct sockaddr_in c_addr;
-	int port;
+	uint32_t port;
 	char ip[256]; 
 
-	rt = read_sock(sock, &todo, sizeof(long));
+	rt = read_sock(sock, &todo, sizeof(uint64_t));
 	if (rt != 0) return(PLD_NOK);
-	printf("Todo:\t%li\n",todo);
+	printf("Todo:\t%"PRIu64"\n",todo);
 
-	rt = read_sock(sock, &inprogress, sizeof(long));
+	rt = read_sock(sock, &inprogress, sizeof(uint64_t));
 	if (rt != 0) return(PLD_NOK);
-	printf("Running:\t%li\n",inprogress);
+	printf("Running:\t%"PRIu64"\n",inprogress);
 
-	rt = read_sock(sock, &done, sizeof(long));
+	rt = read_sock(sock, &done, sizeof(uint64_t));
 	if (rt != 0) return(PLD_NOK);
-	printf("Done:\t%li\n",done);
+	printf("Done:\t%"PRIu64"\n",done);
 
 	rt = read_sock(sock, &nthclients, sizeof(int));
 	if (rt != 0) return(PLD_NOK);
@@ -977,10 +977,10 @@ int C_info(int sock)
 		memset(ip, 0, 256);
 		rt = read_sock(sock, &c_addr, sizeof(struct sockaddr_in));
 		if (rt != 0) return(PLD_NOK);
-		port = (int) ntohs(c_addr.sin_port);
+		port = (uint32_t) ntohs(c_addr.sin_port);
 		memset(ip,0,256);
 		sprintf(ip, "%s", inet_ntoa(c_addr.sin_addr));
-		printf("%i:\t%s::%i\n",i , ip, port);
+		printf("%i:\t%s::%"PRIu32"\n",i , ip, port);
 	}
 	return(PLD_OK);
 }

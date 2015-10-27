@@ -12,14 +12,16 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <netinet/in.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 struct id_client
 {
 	int sock;
 	struct sockaddr_in c_addr;
 	char c_ip[256];
-	int c_ip_int;
-	int c_port;
+	uint32_t c_ip_int;
+	uint32_t c_port;
 };
 
 struct infotime

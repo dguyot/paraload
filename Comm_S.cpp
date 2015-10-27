@@ -264,9 +264,9 @@ int Comm_S::add_client()
 	memset(&(tabclients)[nthclients],0,sizeof(struct id_client));
 	tabclients[nthclients].sock = sock_c;
 	tabclients[nthclients].c_addr = c_addr;
-	tabclients[nthclients].c_port = (int)ntohs(c_addr.sin_port);
+	tabclients[nthclients].c_port = (uint32_t)ntohs(c_addr.sin_port);
 	current_port = tabclients[nthclients].c_port;
-	tabclients[nthclients].c_ip_int	= (int)ntohl(c_addr.sin_addr.s_addr);
+	tabclients[nthclients].c_ip_int	= ntohl(c_addr.sin_addr.s_addr);
 	current_ip_int = tabclients[nthclients].c_ip_int;
 	memset(tabclients[nthclients].c_ip,0,256);
 	sprintf(tabclients[nthclients].c_ip, "%s", inet_ntoa(c_addr.sin_addr));

@@ -55,7 +55,7 @@ char* setshmname(const char* path,const char* bsname)
 {
 	char* name;
 	char stringpid[64];
-	snprintf(stringpid,63,"%ld_%ld",(long)getuid(),(long)getpid());
+	snprintf(stringpid,63,"%"PRIu64"_%"PRIu64,(uint64_t)getuid(),(uint64_t)getpid());
 	if (path[strlen(path)-1] == '/') //if there is an / at the end of path
 	{
 		name = (char*)malloc((strlen(bsname)+strlen(path)+strlen(stringpid)+6)*sizeof(char));

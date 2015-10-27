@@ -61,9 +61,9 @@ static int server(Cline* cline)
 	streampos offout_b;
 	streampos offout_e;
 	std::vector<std::streampos>::size_type current_index;
-	long current_round;
-	long nb_round;
-	long nb_entries;
+	uint64_t current_round;
+	uint64_t nb_round;
+	uint64_t nb_entries;
 	int action;
 	time_t timer;
 	time_t begin_time;
@@ -89,7 +89,7 @@ static int server(Cline* cline)
 	Comm_S *comm_s = new Comm_S(conf, cline);
 	
 	nb_round = atol(conf->getconf("round").c_str());
-	nb_entries = (long) index->getsize();
+	nb_entries = (uint64_t) index->getsize();
 	current_round = 0;
 	
 	ofstream out((cline->getcmd("output")).c_str(), ofstream::app);
