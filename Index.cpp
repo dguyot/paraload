@@ -48,13 +48,13 @@ vector<streampos>::size_type Index::getsize()
 	return size;
 }
 
-string Index::get_filename()
+const string& Index::get_filename()
 {
 	return filename;
 }
 
 
-string Index::get_sentinel()
+const string& Index::get_sentinel()
 {
 	return sentinel;
 }

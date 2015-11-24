@@ -10,10 +10,10 @@ USERDEF := -D'USER_LOGIN="$(shell whoami)"'
 CCC = gcc
 CPP = g++
 #the flags for compilation:
-CFLAGS = -Wall -g $(SVNDEF) $(GCCDEF) $(USERDEF)
-CPPFLAGS = -Wall -std=c++11 -g $(SVNDEF) $(GCCDEF) $(USERDEF)
+CFLAGS = -Wall -O3 $(SVNDEF) $(GCCDEF) $(USERDEF)
+CPPFLAGS = -Wall -std=c++11 -O3 $(SVNDEF) $(GCCDEF) $(USERDEF)
 #the flags for linking:
-LDFLAGS = -Wall -g -std=c++11
+LDFLAGS = -Wall -O3 -std=c++11
 #the name of the executable you want to build:
 EXEC = paraload
 #the name of the c sources for compiling:

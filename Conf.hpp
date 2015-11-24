@@ -20,9 +20,10 @@ class Conf
 	std::string	tcp_keepidle;
 	std::string	tcp_keepintvl;
 	std::string	tcp_keepcnt;
+	std::string voidstring;
 	public:
 	Conf(std::string filename,char separator);
-	std::string getconf(std::string what);
+	const std::string& getconf(std::string what);
 };
 
 #endif

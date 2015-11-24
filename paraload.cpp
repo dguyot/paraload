@@ -113,18 +113,21 @@ static int server(Cline* cline)
 		 */
 		if (fetch->Index_end() >= index->getsize() || (monitor->count_todo() == 0))
 		{
-			cerr << "Rewinding list of jobs" << endl << endl;
-			cerr << "TODO : " << monitor->count_todo() << endl;
-			cerr << "INPROGRESS : " << monitor->count_inprogress() << endl;
-			cerr << "DONE : " << monitor->count_done() << endl;
-			cerr << "FAIL : " << monitor->count_fail() << endl;
-			cerr << endl;
-			cerr << "Trying to recompute all failed jobs" << endl << endl;;
+			if (monitor->count_fail() != 0)
+			{
+				cerr << "Rewinding list of jobs" << endl << endl;
+				cerr << "TODO : " << monitor->count_todo() << endl;
+				cerr << "INPROGRESS : " << monitor->count_inprogress() << endl;
+				cerr << "DONE : " << monitor->count_done() << endl;
+				cerr << "FAIL : " << monitor->count_fail() << endl;
+				cerr << endl;
+				cerr << "Trying to recompute all failed jobs" << endl << endl;
 			
-			monitor->chgstate(FAIL,TODO);
-			fetch->rewind(0);
-			current_round++;
-			cerr << "Starting round " << current_round << " / " << nb_round << endl;
+				monitor->chgstate(FAIL,TODO);
+				fetch->rewind(0);
+				current_round++;
+				cerr << "Starting round " << current_round << " / " << nb_round << endl;
+			}
 		}
 		/**
 		* if there is nothing to do, kill the client immediately

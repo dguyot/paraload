@@ -50,6 +50,7 @@ Cline::Cline(int argc,char **argv)
 	bg = "no";
 	report = "";
 	fails = "-1";
+	voidstring = "";
 
 
 	while( (c = getopt_long(argc,argv,"i:o:C:h:p:l:S:scwv?VPIbr:f:",opt,&option_index)) != -1)
@@ -115,7 +116,7 @@ Cline::Cline(int argc,char **argv)
 }
 
 
-string Cline::getcmd(string what)
+const string& Cline::getcmd(string what)
 {
 	if (what == "input")
 	return input;
@@ -154,7 +155,7 @@ string Cline::getcmd(string what)
 	else if (what == "fails")
 	return fails;
 	else
-	return "";
+	return voidstring;
 }
 
 int Cline::check()

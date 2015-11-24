@@ -26,10 +26,11 @@ class Cline
 	std::string bg;
 	std::string report;
 	std::string fails;
+	std::string voidstring;
 	public:
 	Cline(int argc,char **argv);
 	int check();
-	std::string getcmd(std::string what);
+	const std::string& getcmd(std::string what);
 	void help_func();
 	void version_func();
 };

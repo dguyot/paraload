@@ -15,8 +15,8 @@ class Index
 	Index(std::string filename, std::string sentinel);
 	std::streampos getpos(std::vector <std::streampos>::size_type which);
 	std::vector<std::streampos>::size_type getsize();
-	std::string get_filename();
-	std::string get_sentinel();
+	const std::string& get_filename();
+	const std::string& get_sentinel();
 };
 
 #endif

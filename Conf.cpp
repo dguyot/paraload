@@ -54,11 +54,12 @@ Conf::Conf(string filename,char separator)
 				tcp_keepcnt = field_value;
 		}
 	}
+	voidstring = "";
 }
 
 
 
-string Conf::getconf(string what)
+const string& Conf::getconf(string what)
 {
 	if (what == "cmd")
 	return cmd;
@@ -87,5 +88,5 @@ string Conf::getconf(string what)
 	else if (what == "tcp_keepcnt")
 	return tcp_keepcnt;
 	else
-	return "";
+	return voidstring;
 }
