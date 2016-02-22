@@ -30,6 +30,7 @@ struct infotime
 	double ktime;
 	double rtime;
 	int isvalid;
+	int padding;//to align struct on 64 bits
 };
 
 

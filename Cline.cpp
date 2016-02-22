@@ -248,7 +248,7 @@ void Cline::help_func()
 
 void Cline::version_func()
 {
-	cout << "\nSVN revision: " << SVN_REV << endl;
+	cout << "\nVersion : " << VERSION << endl;
 	cout << "Compiled by " << USER_LOGIN << endl;
 	cout << "with " << GCC_VERSION << endl << endl;
 }

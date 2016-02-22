@@ -2,7 +2,7 @@
 #      you need to have GNU make to use this Makefile!!!
 #
 
-SVNDEF := -D'SVN_REV="$(shell svnversion -n .)"'
+VERSIONDEF := -D'VERSION=1.2'
 GCCDEF := -D'GCC_VERSION="$(shell gcc --version | head -n 1)"'
 USERDEF := -D'USER_LOGIN="$(shell whoami)"'
 
@@ -10,10 +10,10 @@ USERDEF := -D'USER_LOGIN="$(shell whoami)"'
 CCC = gcc
 CPP = g++
 #the flags for compilation:
-CFLAGS = -Wall -O3 $(SVNDEF) $(GCCDEF) $(USERDEF)
-CPPFLAGS = -Wall -std=c++11 -O3 $(SVNDEF) $(GCCDEF) $(USERDEF)
+CFLAGS = -Wpadded -Wall -O3 $(VERSIONDEF) $(GCCDEF) $(USERDEF)
+CPPFLAGS = -Wpadded -Wall -O3 -std=c++11 $(VERSIONDEF) $(GCCDEF) $(USERDEF)
 #the flags for linking:
-LDFLAGS = -Wall -O3 -std=c++11
+LDFLAGS = -Wpadded -Wall -O3 -std=c++11
 #the name of the executable you want to build:
 EXEC = paraload
 #the name of the c sources for compiling:

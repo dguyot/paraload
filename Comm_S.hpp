@@ -31,11 +31,12 @@ class Comm_S
 	
 	off_t idx_begin;
 	off_t idx_end;
-	int rt_value;
+	
 	struct infotime nfotime;
 	
 	struct id_client *tabclients;
 	int nthclients;
+	int rt_value;
 	
 	char* current_ip;
 	uint32_t current_ip_int;
@@ -44,6 +45,8 @@ class Comm_S
 	int max_sockets;
 	
 	struct sockaddr_in c_addr;
+	int padding;//to align class on 64 bits
+
 
 	public:
 	Comm_S(Conf* conf,Cline* cline);

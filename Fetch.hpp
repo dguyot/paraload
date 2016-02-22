@@ -15,9 +15,10 @@ class Fetch
 	std::vector <std::streampos>::size_type begin_index;
 	std::vector <std::streampos>::size_type size_index;
 	std::streampos file_size;
-	int policy;
 	std::streampos policy_limit;
 	char* buffer;
+	int policy;
+	int padding;//to align class on 64 bits
 	public:
 	Fetch(std::string policy, std::string policy_limit, Index *index, Monitor *monitor);
 	~Fetch();

@@ -21,7 +21,6 @@ class Comm_C
 	char* cmd;
 	char* chunk;
 	size_t chunk_size;
-	int rt_value;
 	struct infotime nfotime;
 	char* data_c;
 	size_t data_size;
@@ -32,6 +31,8 @@ class Comm_C
 	const char* port;
 	int sock;
 	int fail;
+	int rt_value;
+	int padding;//to align class on 64 bits
 
 	public:
 	Comm_C(Cline* cline);
