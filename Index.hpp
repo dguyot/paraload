@@ -1,6 +1,8 @@
 #ifndef INDEX_H
 #define INDEX_H
 
+#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
+
 #include <vector>
 #include <string>
 

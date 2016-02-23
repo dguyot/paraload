@@ -1,6 +1,7 @@
 #ifndef COMM_S_H
 #define COMM_S_H
 
+#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
 #include "Cline.hpp"
 #include "Conf.hpp"
 

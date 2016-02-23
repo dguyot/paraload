@@ -1,3 +1,4 @@
+#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
 #include "Cline.hpp"
 #include "Conf.hpp"
 #include "Index.hpp"

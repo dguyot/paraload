@@ -1,6 +1,7 @@
 #ifndef NETWORKS_H
 #define NETWORKS_H
 
+#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
 
 #include <sys/types.h>
 #include <sys/socket.h>

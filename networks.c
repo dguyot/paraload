@@ -1,5 +1,5 @@
 #include "networks.h"
-
+#define DEBUG
 static struct epoll_event *events;
 static int epoll_time_wait;
 static int epoll_max_events;
@@ -127,6 +127,11 @@ static inline ssize_t fwrite_sock(int sock,const void *buf, size_t size)
 //return <0 ->the socket to use;	-1->an error has occured
 int S_getlistensock(const char* port,int backlog)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_getlistensock(%s,%i)\n",port,backlog);
+	fprintf(stderr,"\033[0m");
+	#endif
 	int sock;
 	int reuse_addr = 1;
 	struct sockaddr_in local_addr;
@@ -174,6 +179,11 @@ int S_getlistensock(const char* port,int backlog)
 //Initilization of the TCP server driver
 int S_init(int time_wait, int maxevents, int auth, int max_sockets, int idle, int intvl, int cnt)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_init(%i,%i,%i,%i,%i,%i,%i)\n",time_wait,maxevents,auth,max_sockets,idle,intvl,cnt);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int rt;
 	rlim_t open_limit;
 	struct rlimit limit;
@@ -224,6 +234,11 @@ int S_init(int time_wait, int maxevents, int auth, int max_sockets, int idle, in
 
 int S_free(void)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_free(void)\n");
+	fprintf(stderr,"\033[0m");	
+	#endif
 	if (events != NULL)
 	free(events);
 	return(0);
@@ -233,6 +248,11 @@ int S_free(void)
 //return : 0->Ok a socket is ready;	1->disconnetion;	-1->nothing happens (time limit elapsed)
 int S_wait_event(int epollfd, int *sock_poll)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_wait_event(%i, %p)\n",epollfd,sock_poll);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	//int i;
 	//sigset_t mask;
 	//memset(events,0,sizeof(struct epoll_event)*epoll_max_events);
@@ -294,6 +314,11 @@ int S_wait_event(int epollfd, int *sock_poll)
 //return : 0->Ok	1->Nok
 int S_epolladd(int epollfd, int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_epolladd(%i, %i)\n",epollfd,sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	struct epoll_event event;
 	memset(&event,0,sizeof(struct epoll_event));
 
@@ -318,6 +343,11 @@ int S_epolladd(int epollfd, int sock)
 //return 0->Ok	1->Nok
 int S_epolldel(int epollfd, int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_epolldel(%i, %i)\n",epollfd,sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	struct epoll_event event;
 	memset(&event,0,sizeof(struct epoll_event));
 	
@@ -351,6 +381,11 @@ int S_epolldel(int epollfd, int sock)
 //params : out pointer to a ready sock
 int C_connect(const char* host, const char* port, int* sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_connect(%s, %s, %p)\n",host,port,sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int tcp_delay = 1;//disable nagle algorithm
 	int rt;
 	struct addrinfo * addrinfos;
@@ -415,6 +450,11 @@ int C_connect(const char* host, const char* port, int* sock)
 //params ; out the ip of the client in char* and the port in integer.
 int S_connect(int sock, int* sock_c, struct sockaddr_in *client)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_connect(%i, %p, %p)\n",sock,sock_c,client);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int tcp_delay = 1;//disable nagle algorithm
 	int tcp_keepalive = 1;//watch for living connexion each 600 seconds
 	socklen_t len;
@@ -464,6 +504,11 @@ int S_connect(int sock, int* sock_c, struct sockaddr_in *client)
 //return : 0->OK;	1->Not OK
 int S_deconnect(int epollfd, int *sock_poll)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_deconnect(%i, %p)\n",epollfd,sock_poll);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	struct epoll_event event;
 	if (epoll_ctl(epollfd, EPOLL_CTL_DEL, *sock_poll, &event) == -1)
 	{
@@ -484,6 +529,11 @@ int S_deconnect(int epollfd, int *sock_poll)
 //special : may suicide with raise
 int C_auth(int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_auth(%i)\n",sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int flag;
 	int rt;
 	uid_t client_id;
@@ -513,6 +563,11 @@ int C_auth(int sock)
 //return : 0->auth ok;	1->disconnected;	-1->bad auth
 int S_auth(int sock_c)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_auth(%i)\n",sock_c);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	uid_t server_id;
 	uid_t client_id;
 	int flag;
@@ -562,6 +617,11 @@ int S_auth(int sock_c)
 //special : may suicide with raise(obsolete)
 int C_action(int sock, int action)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_action(%i, %i)\n",sock,action);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int rt;
 	int flag;
 	
@@ -584,6 +644,11 @@ int C_action(int sock, int action)
 //out : action
 int S_action(int sock, int flag, int* action)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_action(%i, %i, %p)\n",sock,flag,action);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int rt;
 	
 	rt = read_sock(sock,action,sizeof(int));
@@ -617,8 +682,18 @@ int S_action(int sock, int flag, int* action)
 //out : nothing
 int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const char* cmd,const char* chunk)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_get(%i, %lu, %lu, %lu, %lu, %p, %p)\n",sock_c,begin,end,cmd_size,size,cmd,chunk);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	unsigned char S_checksum[16];
 	size_t write_len = 0;
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	uint64_t cmd_size_32 = (uint64_t)cmd_size;
+	uint64_t size_32 = (uint64_t)size;
+	#endif
+
 	/*perhaps may be a faster version? (less system call but memory copy)
 	int dsock = dup(sock_c);
 	FILE* fsock = fdopen(dsock,"w");
@@ -657,17 +732,27 @@ int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const
 	/*int i;
 	for (i = 0; i < 16; i++)
 	{
-		printf ("%02x", (unsigned int) checksum[i]);
+		printf ("%02x", (unsigned int) S_checksum[i]);
 	}
 	printf ("\n");*/
 	write_len = write_sock(sock_c, &begin, sizeof(off_t));
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &end, sizeof(off_t));
 	if (write_len != 0) return(PLD_NOK);
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	write_len = write_sock(sock_c, &cmd_size_32, sizeof(uint64_t));
+	if (write_len != 0) return(PLD_NOK);
+	#else
 	write_len = write_sock(sock_c, &cmd_size, sizeof(size_t));
 	if (write_len != 0) return(PLD_NOK);
+	#endif
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	write_len = write_sock(sock_c, &size_32, sizeof(uint64_t));
+	if (write_len != 0) return(PLD_NOK);
+	#else
 	write_len = write_sock(sock_c, &size, sizeof(size_t));
 	if (write_len != 0) return(PLD_NOK);
+	#endif
 	write_len = write_sock(sock_c, S_checksum, 16 * sizeof(unsigned char));
 	if (write_len != 0) return(PLD_NOK);
 	
@@ -685,6 +770,12 @@ int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const
 //warning : cmd and chunk must be initialised with NULL ptr at the first call!
 int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* chunk_size)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_get(%i, %p, %p, %p, %p, %p)\n",sock,begin,end,cmd,chunk,chunk_size);
+	fprintf(stderr,"C_get(%i, *%lu, *%lu, %p, %p, %p)\n",sock,*begin,*end,cmd,chunk,chunk_size);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	unsigned char S_checksum[16];
 	unsigned char C_checksum[16];
 	int rt;
@@ -693,14 +784,32 @@ int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* 
 	size_t cmd_size = 0;
 	size_t size = 0;
 	
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	uint64_t cmd_size_32;
+	uint64_t size_32;
+	#endif
+	
 	rt = read_sock(sock, begin, sizeof(off_t));
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock, end, sizeof(off_t));
 	if (rt != 0) return(PLD_NOK);
+	#if __WORDSIZE != 64
+	rt = read_sock(sock, &cmd_size_32, sizeof(uint64_t));
+	if (rt != 0) return(PLD_NOK);
+	cmd_size = (size_t)cmd_size_32;
+	#else
 	rt = read_sock(sock, &cmd_size, sizeof(size_t));
 	if (rt != 0) return(PLD_NOK);
+	#endif
+	#if __WORDSIZE != 64
+	rt = read_sock(sock, &size_32, sizeof(uint64_t));
+	if (rt != 0) return(PLD_NOK);
+	size = (size_t)size_32;
+	#else
 	rt = read_sock(sock, &size, sizeof(size_t));
 	if (rt != 0) return(PLD_NOK);
+	#endif
+	
 	rt = read_sock(sock, S_checksum, 16 * sizeof(unsigned char));
 	if (rt != 0) return(PLD_NOK);
 	
@@ -745,8 +854,18 @@ int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* 
 //out : nothing
 int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfotime, size_t size,const char* data_c)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_put(%i, %lu, %lu, %i, %p, %lu, %p)\n",sock,begin,end,rt_value,nfotime,size,data_c);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	unsigned char C_checksum[16];
 	size_t write_len = 0;
+	
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	uint64_t size_32 = (uint64_t)size;
+	#endif
+	
 	/*maybe faster? (less system call but memory copy)
 	int dsock = dup(sock);
 	FILE* fsock = fdopen(dsock,"w");
@@ -784,8 +903,13 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock, nfotime, sizeof(struct infotime));
 	if (write_len != 0) return(PLD_NOK);
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	write_len = write_sock(sock, &size_32, sizeof(uint64_t));
+	if (write_len != 0) return(PLD_NOK);
+	#else
 	write_len = write_sock(sock, &size, sizeof(size_t));
 	if (write_len != 0) return(PLD_NOK);
+	#endif
 	write_len = write_sock(sock, C_checksum, 16 * sizeof(unsigned char));
 	if (write_len != 0) return(PLD_NOK);
 	
@@ -800,13 +924,22 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 //warning : chunk must be initialised with NULL ptr at the first call!
 int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* nfotime, char** data_r, size_t* size_r)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_put(%i, %p, %p, %p, %p, %p, %p)\n",sock_c,begin,end,rt_value,nfotime,data_r,size_r);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	unsigned char S_checksum[16];
 	unsigned char C_checksum[16];
 	int rt;
 	int i;
 	size_t read_len = 0;
 	size_t size = 0;
-
+	
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	uint64_t size_32;
+	#endif
+	
 	rt = read_sock(sock_c, begin, sizeof(off_t));
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, end, sizeof(off_t));
@@ -815,8 +948,14 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, nfotime, sizeof(struct infotime));
 	if (rt != 0) return(PLD_NOK);
+	#if __WORDSIZE != 64 //for 32-64 compatibility
+	rt = read_sock(sock_c, &size_32, sizeof(uint64_t));
+	if (rt != 0) return(PLD_NOK);
+	size = (size_t)size_32;
+	#else
 	rt = read_sock(sock_c, &size, sizeof(size_t));
 	if (rt != 0) return(PLD_NOK);
+	#endif
 	rt = read_sock(sock_c, C_checksum, 16 * sizeof(unsigned char));
 	if (rt != 0) return(PLD_NOK);
 
@@ -851,6 +990,11 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 //out : nothing
 int C_ping(int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_ping(%i)\n",sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int rt;
 	int rnd_serv;
 	int rnd = RAND_MAX;
@@ -873,6 +1017,11 @@ int C_ping(int sock)
 //out : nothing
 int S_pong(int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_pong(%i)\n",sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int rt;
 	int rnd;
 	rt = read_sock(sock, &rnd, sizeof(int));
@@ -893,6 +1042,11 @@ int S_pong(int sock)
 
 int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail, int nthclients, struct id_client *tabclients)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"S_info(%i, %lu, %lu, %lu, %lu, %i, %p)\n",sock_c,todo,inprogress,done,fail,nthclients,tabclients);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int i;
 	size_t write_len = 0;
 	/*maybe faster? (less system call but memory copy)
@@ -948,6 +1102,11 @@ int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64
 
 int C_info(int sock)
 {
+	#ifdef DEBUG
+	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"C_info(%i)\n", sock);
+	fprintf(stderr,"\033[0m");	
+	#endif
 	int i;
 	int rt;
 	uint64_t todo;
