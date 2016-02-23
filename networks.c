@@ -1,5 +1,5 @@
 #include "networks.h"
-#define DEBUG
+//#define DEBUG
 static struct epoll_event *events;
 static int epoll_time_wait;
 static int epoll_max_events;
