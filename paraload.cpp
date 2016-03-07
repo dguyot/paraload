@@ -1,4 +1,5 @@
 #define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
+//#define DEBUG
 #include "Cline.hpp"
 #include "Conf.hpp"
 #include "Index.hpp"
@@ -148,7 +149,27 @@ static int server(Cline* cline)
 		 * the action is returned
 		 */
 		action = comm_s->wait();
-
+		
+		#ifdef DEBUG
+		fprintf(stderr,"\033[31m");
+		switch (action)
+		{
+			case PLD_GET:
+			cerr << "BEFORE\tGET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_PUT:
+			cerr << "BEFORE\tPUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_DEC:
+			cerr << "BEFORE\tDEC" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_CON:
+			cerr << "BEFORE\tCON" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+		}
+		fprintf(stderr,"\033[0m");
+		#endif
+		
 		switch (action)
 		{
 			case PLD_GET:
@@ -160,7 +181,6 @@ static int server(Cline* cline)
 					monitor->add_addr_idx(comm_s->get_ip_int(),comm_s->get_port(), fetch->Index_begin(), fetch->Index_end());
 				}
 				else fetch->rewind(fetch->Index_begin());
-				//cerr << "GET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 				break;
 			}
 			case PLD_PUT:
@@ -191,8 +211,6 @@ static int server(Cline* cline)
 						monitor->tag_segment(FAIL, comm_s->get_idx_begin(), comm_s->get_idx_end());
 						cerr << "!!\t" << comm_s->get_ip() << "::" << comm_s->get_port() << "\t[" << comm_s->get_idx_begin() << "," << comm_s->get_idx_end() << "]\t" << comm_s->get_rt_value() << "\t" << timer - begin_time << "\t" << asctime(localtime(&timer));
 					}
-					//cerr << "PUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
-
 				}
 				break;
 			}
@@ -208,7 +226,7 @@ static int server(Cline* cline)
 				current_index = monitor->exists_addr_idx(comm_s->get_ip_int(),comm_s->get_port());
 				time(&timer);
 				cerr << "--\t" << comm_s->get_ip() << "::" << comm_s->get_port() << "\t" << timer - begin_time << "\t" << asctime(localtime(&timer));
-				if (current_index != (std::vector<std::streampos>::size_type)(-1)) fetch->rewind(current_index);
+				if (current_index != (std::vector<std::streampos>::size_type)(-1)) fetch->rewind(current_index - 1);
 				comm_s->remove_client();
 
 				break;
@@ -228,6 +246,25 @@ static int server(Cline* cline)
 				break;
 			}
 		}
+		#ifdef DEBUG
+		fprintf(stderr,"\033[31m");
+		switch (action)
+		{
+			case PLD_GET:
+			cerr << "AFTER\tGET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_PUT:
+			cerr << "AFTER\tPUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_DEC:
+			cerr << "AFTER\tDEC" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+			case PLD_CON:
+			cerr << "AFTER\tCON" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			break;
+		}
+		fprintf(stderr,"\033[0m");
+		#endif
 	}
 
 

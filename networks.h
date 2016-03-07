@@ -65,7 +65,7 @@ int S_free(void);
 
 int C_connect(const char* host, const char* port, int* sock);
 int S_connect(int sock, int* sock_c, struct sockaddr_in *client);
-int S_deconnect(int epollfd, int *sock_poll);
+int S_deconnect(int epollfd, int sock_poll);
 
 int C_auth(int sock);
 int S_auth(int sock_c);

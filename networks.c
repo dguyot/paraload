@@ -1,5 +1,6 @@
 #include "networks.h"
-//#define DEBUG
+#define DEBUG
+#define DEBUG_LVL2
 static struct epoll_event *events;
 static int epoll_time_wait;
 static int epoll_max_events;
@@ -20,12 +21,59 @@ static int tcp_keepcnt;
 //General local tools
 //
 
+
+//double big/little endian conversion (host to little endian)
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+static inline double htole64_d(double le_double)
+{
+	union
+	{
+		double d;
+		uint64_t uint64;
+	} u;
+	u.d = le_double;
+	u.uint64 = htole64(u.uint64);
+	return(u.d);
+}
+
+
+static inline double le64toh_d(double be_double)
+{
+	union
+	{
+		double d;
+		uint64_t uint64;
+	} u;
+	u.d = be_double;
+	u.uint64 = le64toh(u.uint64);
+	return(u.d);
+}
+#endif
+
+
+
+
+
+
+
 //return 0->OK;	1->write error;	-1->bad write len
-static inline int write_sock(int sock,const void *buf, size_t size)
+static inline int write_sock(int sock, const void *buf, size_t size)
 {
 	ssize_t write_len;
 	write_len = write(sock,buf,size);
-//	printf("%i\n",size);
+	
+	#ifdef DEBUG_LVL2//debug function, write on stderr all network write in hex (write are print in red)
+	size_t s = 0;
+	uint32_t* buf_s = (uint32_t*)buf;
+	fprintf(stderr,"\033[31m");
+	for(s = 0; s < (size >> 2); s++)
+	{
+		fprintf(stderr,"%08X(%u) ",buf_s[s],buf_s[s]);
+	}
+	printf("\n");
+	fprintf(stderr,"\033[0m");
+	#endif
+	
 	if (write_len == size)
 	{
 		return(0);
@@ -41,11 +89,23 @@ static inline int write_sock(int sock,const void *buf, size_t size)
 }
 
 //return 0->OK;	1->disconnection;	-1->bad read len or error
-static inline int read_sock(int sock,void *buf, size_t size)
+static inline int read_sock(int sock, void *buf, size_t size)
 {
 	ssize_t read_len;
 	read_len = read(sock,buf,size);
-//	printf("%i\n",size);
+	
+	#ifdef DEBUG_LVL2//debug function, write on stderr all network read in hex (read are print in green)
+	size_t s = 0;
+	uint32_t* buf_s = (uint32_t*)buf;
+	fprintf(stderr,"\033[32m");
+	for(s = 0; s < (size >> 2); s++)
+	{
+		fprintf(stderr,"%08X(%u) ",buf_s[s],buf_s[s]);
+	}
+	printf("\n");
+	fprintf(stderr,"\033[0m");
+	#endif
+	
 	if (read_len == size)
 	{
 		return(0);
@@ -124,11 +184,13 @@ static inline ssize_t fwrite_sock(int sock,const void *buf, size_t size)
 //Lonely routines only for the server or the client (no communications)
 //
 
+//the server open a listenning socket
+//input: port number, backlog for the system call listen
 //return <0 ->the socket to use;	-1->an error has occured
 int S_getlistensock(const char* port,int backlog)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_getlistensock(%s,%i)\n",port,backlog);
 	fprintf(stderr,"\033[0m");
 	#endif
@@ -176,11 +238,14 @@ int S_getlistensock(const char* port,int backlog)
 }
 
 
-//Initilization of the TCP server driver
+//Initilization of the TCP server driver with some parameters
+//input: time_wait for epoll, maxevent for epoll, auth to disable/enable authentification
+//max_socket for setrlimit, idle intvl cnt: as TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT parameters of network stack.
+//return: PLD_OK -> OK, PLD_NOK -> something bad happens
 int S_init(int time_wait, int maxevents, int auth, int max_sockets, int idle, int intvl, int cnt)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_init(%i,%i,%i,%i,%i,%i,%i)\n",time_wait,maxevents,auth,max_sockets,idle,intvl,cnt);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -207,7 +272,7 @@ int S_init(int time_wait, int maxevents, int auth, int max_sockets, int idle, in
 	
 	
 	rt = getrlimit(RLIMIT_NOFILE, &limit);
-	if (rt != 0) return(rt);
+	if (rt != 0) return(PLD_NOK);
 	open_limit = PLD_OPENED_FD_NOTSOCKET + (rlim_t)max_sockets;
 	if (open_limit > limit.rlim_max)
 	{
@@ -227,15 +292,18 @@ int S_init(int time_wait, int maxevents, int auth, int max_sockets, int idle, in
 	fprintf(stderr, "Max number of clients: %i\n", max_clients);
 	
 	rt = setrlimit(RLIMIT_NOFILE,&limit);
-	return(rt);
 	
+	if (rt != 0) return(PLD_NOK);
 	return(PLD_OK);
 }
 
+//free the memory of the driver
+//input: nothing
+//return: 0
 int S_free(void)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_free(void)\n");
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -245,18 +313,21 @@ int S_free(void)
 }
 
 
-//return : 0->Ok a socket is ready;	1->disconnetion;	-1->nothing happens (time limit elapsed)
+//wait an event with epoll system call
+//input: epollfd -> an epoll set of file descriptor.
+//output: a file descriptor with some activity.
+//return: PLD_EPOLL_ERROR -> error or disconnection or problem with the peer
+//return: PLD_EPOLL_READY -> a peer send some data on the socket
+//return: PLD_EPOLL_ELAPSED -> nothing happens on the epollfd
 int S_wait_event(int epollfd, int *sock_poll)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_wait_event(%i, %p)\n",epollfd,sock_poll);
 	fprintf(stderr,"\033[0m");	
 	#endif
-	//int i;
-	//sigset_t mask;
-	//memset(events,0,sizeof(struct epoll_event)*epoll_max_events);
-	//n = epoll_pwait(epollfd, events, epoll_max_events, epoll_time_wait, &mask);
+	
+	
 	if (n_events == ith_event)
 	{
 		n_events = epoll_wait(epollfd, events, epoll_max_events, epoll_time_wait);
@@ -309,13 +380,15 @@ int S_wait_event(int epollfd, int *sock_poll)
 }
 
 
-//
+
 //add new sock on epollfd
-//return : 0->Ok	1->Nok
+//input: epollfd -> an epoll set of file descriptor, sock -> a socket to add to the epoll set
+//output: nothing
+//return : PLD_OK->OK	PLD_NOK->failed to add the socket on epollfd
 int S_epolladd(int epollfd, int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_epolladd(%i, %i)\n",epollfd,sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -338,13 +411,15 @@ int S_epolladd(int epollfd, int sock)
 	}
 }
 
-//
-//delete sock on epollfd, and close sock
-//return 0->Ok	1->Nok
+//delete new sock on epollfd
+//input: epollfd -> an epoll set of file descriptor, sock -> a socket to delete to the epoll set
+//output: nothing
+//return : PLD_OK->OK	PLD_NOK->failed to delete the socket on epollfd
+
 int S_epolldel(int epollfd, int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_epolldel(%i, %i)\n",epollfd,sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -376,13 +451,15 @@ int S_epolldel(int epollfd, int sock)
 
 //first : the client make a request of connexion he needs a host and a port in tcp context
 
-
-//return : 0->OK;	1->Not OK;
-//params : out pointer to a ready sock
+//client ask for connexion on the server
+//input: host -> the ip or the name of the server host
+//input: port -> the listenning port of the server
+//output: a socket that can be used by the client to communicate with the server
+//return: PLD_OK -> the socket is ready, PLD_NOK -> the socket is not ready.
 int C_connect(const char* host, const char* port, int* sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_connect(%s, %s, %p)\n",host,port,sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -446,12 +523,15 @@ int C_connect(const char* host, const char* port, int* sock)
 
 //The server must accept this connexion..
 
-//return : 0->OK;	1->Not OK
-//params ; out the ip of the client in char* and the port in integer.
+//wait for clients connection
+//input: sock -> the listenning socket of the server
+//output sock_c -> the connected socket to the client
+//output client -> structure that describe the client
+//return : PLD_OK -> the connected socket is ready, PLD_NOK -> the connected socket is not ready
 int S_connect(int sock, int* sock_c, struct sockaddr_in *client)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_connect(%i, %p, %p)\n",sock,sock_c,client);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -501,48 +581,70 @@ int S_connect(int sock, int* sock_c, struct sockaddr_in *client)
 	return(PLD_OK);
 }
 
-//return : 0->OK;	1->Not OK
-int S_deconnect(int epollfd, int *sock_poll)
+
+//deconnect a client and remove its socket to an epoll set
+//input: epollfd -> an epoll set
+//input: sock_poll -> the connected socket to remove
+//output: nothing
+//return: PLD_OK -> socket removed, PLD_NOK -> socket not removed properly
+//NOT USED AT NOW!!!!
+int S_deconnect(int epollfd, int sock_poll)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
-	fprintf(stderr,"S_deconnect(%i, %p)\n",epollfd,sock_poll);
+	fprintf(stderr,"\033[36m");
+	fprintf(stderr,"S_deconnect(%i, %i)\n",epollfd,sock_poll);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	struct epoll_event event;
-	if (epoll_ctl(epollfd, EPOLL_CTL_DEL, *sock_poll, &event) == -1)
+	if (epoll_ctl(epollfd, EPOLL_CTL_DEL, sock_poll, &event) == -1)
 	{
 		return(PLD_NOK);
 	}
-	if (close(*sock_poll) == -1)
+	if (close(sock_poll) == -1)
 	{
 		return(PLD_NOK);
 	}
 	return(PLD_OK);
 }
 
+
+
+
 //second : the client must authenticate him to the server.
 //if the authentication is bad the server send a flag that correspond to a signal (kill or another)
 
 
-//return 0->OK;	1->write error;	-1->bad length transmition
-//special : may suicide with raise
+//authentification part of the client
+//input: sock -> the connected socket towards the server
+//output: nothing
+//return: PLD_DEC -> there is too much clients connected
+//return: PLD_OK -> authentification OK
+//special : may kill the client with raise
 int C_auth(int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_auth(%i)\n",sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int flag;
 	int rt;
 	uid_t client_id;
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	client_id = (uid_t)htole32((uint32_t)getuid());
+	#else
 	client_id = getuid();
-	
+	#endif
+	fprintf(stderr,"%d\n",client_id);
 	rt = write_sock(sock,&client_id,sizeof(uid_t));
+	
 	if (rt != 0) return(rt);
 	rt = read_sock(sock,&flag,sizeof(uid_t));
 	if (rt != 0) return(rt);
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	flag = (int)le32toh((uint32_t)flag);
+	#endif
+	
 	if (flag == PLD_SIG_STOP)
 	{
 		close(sock);
@@ -559,12 +661,16 @@ int C_auth(int sock)
 	return(PLD_OK);
 }	
 
-
-//return : 0->auth ok;	1->disconnected;	-1->bad auth
+//authentification part of the server
+//input: sock_c -> the connected socket towards the client
+//output: nothing
+//return: PLD_TO_MANY_CLIENT -> too many clients on the server
+//return: PLD_AUTH_NOK -> bad authentification
+//return: PLD_AUTH_OK -> good authentification
 int S_auth(int sock_c)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_auth(%i)\n",sock_c);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -574,6 +680,9 @@ int S_auth(int sock_c)
 	int rt;
 	
 	rt = read_sock(sock_c,&client_id,sizeof(uid_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	client_id = (uid_t)le32toh((uint32_t)client_id);
+	#endif
 	if (rt != 0) return(PLD_DEC);
 	if (auth_flag == PLD_AUTH_ENABLED)
 	{
@@ -586,6 +695,9 @@ int S_auth(int sock_c)
 	if (connected_clients >= max_clients)
 	{
 		flag = PLD_TO_MANY_CLIENT;
+		#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+		flag = (int)htole32((uint32_t) flag);
+		#endif
 		rt = write_sock(sock_c,&flag,sizeof(int));
 		if (rt != 0) return(PLD_DEC);
 		close(sock_c);
@@ -594,6 +706,9 @@ int S_auth(int sock_c)
 	else if (client_id != server_id)
 	{
 		flag = PLD_SIG_STOP;
+		#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+		flag = (int)htole32((uint32_t) flag);
+		#endif
 		rt = write_sock(sock_c,&flag,sizeof(int));
 		if (rt != 0) return(PLD_DEC);
 		close(sock_c);
@@ -602,6 +717,9 @@ int S_auth(int sock_c)
 	else
 	{
 		flag = PLD_SIG_OK;
+		#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+		flag = (int)htole32((uint32_t) flag);
+		#endif
 		rt = write_sock(sock_c,&flag,sizeof(int));
 		if (rt != 0) return(PLD_DEC);
 		return(PLD_AUTH_OK);
@@ -612,52 +730,72 @@ int S_auth(int sock_c)
 //The client send the action (Get a chunk for example)
 //
 
+//the client send the action he want to make
+//input: sock -> connected socket towards the server
+//input: action -> GET,PUT.... the action asked
+//output: nothing
+//return: PLD_DEC -> deconnexion to the server is needed
+//return: PLD_OK -> the server is ready for the action
 
-//return : 0->OK;	other->NOK
-//special : may suicide with raise(obsolete)
 int C_action(int sock, int action)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_action(%i, %i)\n",sock,action);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int rt;
 	int flag;
-	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	int action_le = (int)htole32((uint32_t) action);
+	rt = write_sock(sock,&action_le,sizeof(int));
+	#else
 	rt = write_sock(sock,&action,sizeof(int));
+	#endif
 	if (rt != 0) return(PLD_DEC);
 	rt = read_sock(sock,&flag,sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	flag = (int)le32toh((uint32_t) flag);
+	#endif
 	if (rt != 0) return(PLD_DEC);
 	
 	if ((flag == PLD_SIG_STOP) && (action == PLD_GET))
 	{
 		close(sock);
 		return(PLD_DEC);
-		//fprintf(stderr,"%s\n","Client killed by the server");
-		//raise(flag);
 	}
 	return(PLD_OK);
 }
 
-//return : 0->OK;	!=0 -> NOK (can destroy the connection)
-//out : action
+//the server read the action asked by the client
+//input: sock -> connected socket towards the client
+//input: flag -> flag to send to the client (eventually to kill him)
+//output: action -> the action the client want to make
 int S_action(int sock, int flag, int* action)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_action(%i, %i, %p)\n",sock,flag,action);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int rt;
 	
 	rt = read_sock(sock,action,sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*action = (int)le32toh((uint32_t)(*action));
+	#endif
 	if (rt != 0) 
 	{
 		*action = PLD_DEC;
 		return(rt);
 	}
+	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	int flag_le = (int)htole32((uint32_t) flag);
+	rt = write_sock(sock,&flag_le,sizeof(int));
+	#else
 	rt = write_sock(sock,&flag,sizeof(int));
+	#endif
 	if (rt != 0)
 	{
 		*action = PLD_DEC;
@@ -676,20 +814,25 @@ int S_action(int sock, int flag, int* action)
 //implementation of the GET method the server send informations first.
 //using fwrite to send, fread can't be used because it make more reads than needed by the protocol
 //Use of local method fread_sock
-//
+// 
 
-//return : 0->OK;	1->error;
-//out : nothing
-int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const char* cmd,const char* chunk)
+//the server send data, command, and indexs
+//input: sock_c -> a connected socket towards the client
+//input: begin,end -> indexs of the data.
+//input: cmd_size,size -> sizes of command and data.
+//input: cmd, chunk -> the command and the data
+//ouput: nothing
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition OK
+int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size, const char* cmd, const char* chunk)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
-	fprintf(stderr,"S_get(%i, %lu, %lu, %lu, %lu, %p, %p)\n",sock_c,begin,end,cmd_size,size,cmd,chunk);
+	fprintf(stderr,"\033[36m");
+	fprintf(stderr,"S_get(%i, %llu, %llu, %llu, %llu, %p, %p)\n",sock_c,begin,end,cmd_size,size,cmd,chunk);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char S_checksum[16];
 	size_t write_len = 0;
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	uint64_t cmd_size_32 = (uint64_t)cmd_size;
 	uint64_t size_32 = (uint64_t)size;
 	#endif
@@ -729,24 +872,32 @@ int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const
 	fclose(fsock);
 	*/
 	MD5(S_checksum,(unsigned char*)chunk,(unsigned long)size);
-	/*int i;
-	for (i = 0; i < 16; i++)
-	{
-		printf ("%02x", (unsigned int) S_checksum[i]);
-	}
-	printf ("\n");*/
+	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	begin = (off_t)htole64((uint64_t) begin);
+	end = (off_t)htole64((uint64_t) end);
+	#if __SIZEOF_SIZE_T__ == 8
+	cmd_size = (off_t)htole64((uint64_t) cmd_size);
+	size = (off_t)htole64((uint64_t) size);
+	#else
+	cmd_size_32 = htole64((uint64_t) cmd_size_32);
+	size_32 = htole64((uint64_t) size_32);
+	#endif
+	#endif
+	
 	write_len = write_sock(sock_c, &begin, sizeof(off_t));
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &end, sizeof(off_t));
 	if (write_len != 0) return(PLD_NOK);
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	write_len = write_sock(sock_c, &cmd_size_32, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
 	#else
 	write_len = write_sock(sock_c, &cmd_size, sizeof(size_t));
 	if (write_len != 0) return(PLD_NOK);
 	#endif
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	write_len = write_sock(sock_c, &size_32, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
 	#else
@@ -765,15 +916,19 @@ int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size,const
 	return(PLD_OK);
 }
 
-//return : 0->OK;	1->error;
-//out : begin, end, cmd, chunk
+//the client receive the command, data and indexs
+//input: sock -> a connected socket towards the server
+//output: begin,end -> indexs of the data.
+//output: chunk_size -> size of data.
+//output: cmd, chunk -> the command and the data
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition OK
 //warning : cmd and chunk must be initialised with NULL ptr at the first call!
 int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* chunk_size)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_get(%i, %p, %p, %p, %p, %p)\n",sock,begin,end,cmd,chunk,chunk_size);
-	fprintf(stderr,"C_get(%i, *%lu, *%lu, %p, %p, %p)\n",sock,*begin,*end,cmd,chunk,chunk_size);
+	fprintf(stderr,"C_get(%i, *%llu, *%llu, %p, %p, %p)\n",sock,*begin,*end,cmd,chunk,chunk_size);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char S_checksum[16];
@@ -784,29 +939,53 @@ int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* 
 	size_t cmd_size = 0;
 	size_t size = 0;
 	
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	uint64_t cmd_size_32;
 	uint64_t size_32;
 	#endif
 	
 	rt = read_sock(sock, begin, sizeof(off_t));
+	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*begin = (off_t)le64toh((uint64_t) *begin);
+	#endif
+	
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock, end, sizeof(off_t));
+	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*end = (off_t)le64toh((uint64_t) *end);
+	#endif
+	
 	if (rt != 0) return(PLD_NOK);
-	#if __WORDSIZE != 64
+	
+	#if __SIZEOF_SIZE_T__ != 8
 	rt = read_sock(sock, &cmd_size_32, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	cmd_size_32 = le64toh((uint64_t)cmd_size_32);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	cmd_size = (size_t)cmd_size_32;
 	#else
 	rt = read_sock(sock, &cmd_size, sizeof(size_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	cmd_size = (size_t)le64toh((uint64_t)cmd_size);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	#endif
-	#if __WORDSIZE != 64
+	
+	#if __SIZEOF_SIZE_T__ != 8
 	rt = read_sock(sock, &size_32, sizeof(uint64_t));
 	if (rt != 0) return(PLD_NOK);
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	size_32 = le64toh((uint64_t)size_32);
+	#endif
 	size = (size_t)size_32;
 	#else
 	rt = read_sock(sock, &size, sizeof(size_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	size = (size_t)le64toh((uint64_t)size);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	#endif
 	
@@ -850,19 +1029,26 @@ int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* 
 //implementation of the PUT method the client send informations first.
 //
 
-//return : 0->OK;	1->error;
-//out : nothing
+//the client send the computed data to the server
+//input: sock -> a connected socket towards the server
+//input: begin,end -> indexs of the data (input data not computed).
+//input: rt_value -> return code of system("command")
+//input: nfotime -> time information of command run
+//input: size -> size data computed.
+//input: data_c -> the computed data
+//output: nothing
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition OK
 int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfotime, size_t size,const char* data_c)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
-	fprintf(stderr,"C_put(%i, %lu, %lu, %i, %p, %lu, %p)\n",sock,begin,end,rt_value,nfotime,size,data_c);
+	fprintf(stderr,"\033[36m");
+	fprintf(stderr,"C_put(%i, %llu, %llu, %i, %p, %llu, %p)\n",sock,begin,end,rt_value,nfotime,size,data_c);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char C_checksum[16];
 	size_t write_len = 0;
 	
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	uint64_t size_32 = (uint64_t)size;
 	#endif
 	
@@ -895,6 +1081,22 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 	*/
 	MD5(C_checksum, (unsigned char*)data_c, (unsigned long)size);
 	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	begin = (off_t)htole64((uint64_t) begin);
+	end = (off_t)htole64((uint64_t) end);
+	rt_value = (int)htole32((uint32_t) rt_value);
+	nfotime->utime = htole64_d(nfotime->utime);
+	nfotime->ktime = htole64_d(nfotime->ktime);
+	nfotime->rtime = htole64_d(nfotime->rtime);
+	nfotime->isvalid = (int)htole32((uint32_t) nfotime->isvalid);
+	nfotime->padding = (int)htole32((uint32_t) nfotime->padding);
+	#if __SIZEOF_SIZE_T__ == 8
+	size = (off_t)htole64((uint64_t) size);
+	#else
+	size_32 = htole64((uint64_t) size_32);
+	#endif
+	#endif
+	
 	write_len = write_sock(sock, &begin, sizeof(off_t));
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock, &end, sizeof(off_t));
@@ -903,7 +1105,7 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock, nfotime, sizeof(struct infotime));
 	if (write_len != 0) return(PLD_NOK);
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	write_len = write_sock(sock, &size_32, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
 	#else
@@ -918,14 +1120,22 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 
 	return(PLD_OK);
 }
-	
-//return 0->Ok 1->Nok	
-//out : begin, end, rt_value, nfotime, data_r, size_r
+
+
+
+//the client send the computed data to the server
+//input: sock_c -> a connected socket towards the client
+//output: begin,end -> indexs of the data (input data not computed).
+//output: rt_value -> return code of system("command")
+//output: nfotime -> time information of command run
+//output: size -> size data computed.
+//output: data_c -> the computed data
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition OK
 //warning : chunk must be initialised with NULL ptr at the first call!
 int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* nfotime, char** data_r, size_t* size_r)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_put(%i, %p, %p, %p, %p, %p, %p)\n",sock_c,begin,end,rt_value,nfotime,data_r,size_r);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -936,24 +1146,46 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 	size_t read_len = 0;
 	size_t size = 0;
 	
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	uint64_t size_32;
 	#endif
 	
 	rt = read_sock(sock_c, begin, sizeof(off_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*begin = (off_t)le64toh((uint64_t)(*begin));
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, end, sizeof(off_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*end = (off_t)le64toh((uint64_t)(*end));
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, rt_value, sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	*rt_value = (int)le32toh((uint32_t)(*rt_value));
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, nfotime, sizeof(struct infotime));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	nfotime->utime = le64toh_d(nfotime->utime);
+	nfotime->ktime = le64toh_d(nfotime->ktime);
+	nfotime->rtime = le64toh_d(nfotime->rtime);
+	nfotime->isvalid = (int)le32toh((uint32_t) nfotime->isvalid);
+	nfotime->padding = (int)le32toh((uint32_t) nfotime->padding);
+	#endif
 	if (rt != 0) return(PLD_NOK);
-	#if __WORDSIZE != 64 //for 32-64 compatibility
+	#if __SIZEOF_SIZE_T__ != 8 //for 32-64 compatibility
 	rt = read_sock(sock_c, &size_32, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	size_32 = le64toh(size_32);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	size = (size_t)size_32;
 	#else
 	rt = read_sock(sock_c, &size, sizeof(size_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	size = (size_t)le64toh((uint64_t)size);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	#endif
 	rt = read_sock(sock_c, C_checksum, 16 * sizeof(unsigned char));
@@ -985,13 +1217,15 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 //Ping : to make sure that the server is alive!
 //The client send an integer, the server add 1 to that integer and send it to the client
 //
-	
-//return 0->Ok 1->Nok
-//out : nothing
+
+//the client send data to ensure server is alive
+//input: sock -> a connected socket towards the server
+//output: nothing
+//return: PLD_OK -> server is running, PLD_NOK -> server does not work or is not alive
 int C_ping(int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_ping(%i)\n",sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -1004,29 +1238,45 @@ int C_ping(int sock)
 		srand(time(NULL));
 		rnd = rand();
 	}
-	
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	rnd = (int)htole32((uint32_t)rnd);
+	#endif
 	rt = write_sock(sock, &rnd, sizeof(int));
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock, &rnd_serv, sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	rnd_serv = (int)le32toh((uint32_t)rnd_serv);
+	#endif
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	rnd = (int)le32toh((uint32_t)rnd);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	if (rnd + 1 == rnd_serv) return(PLD_OK);
 	else return(PLD_NOK);
 }
 
-//return 0->Ok else->Nok
-//out : nothing
+//the server respond to the ping of the client
+//input: sock -> a connected socket towards the client
+//output: nothing
+//return: PLD_NOK -> transmition error, PLD_OK -> pong done
 int S_pong(int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_pong(%i)\n",sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int rt;
 	int rnd;
 	rt = read_sock(sock, &rnd, sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	rnd = (int)le32toh((uint32_t)rnd);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	rnd++;
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	rnd = (int)htole32((uint32_t)rnd);
+	#endif
 	rt = write_sock(sock, &rnd, sizeof(int));
 	if (rt != 0) return(PLD_NOK);
 	return(PLD_OK);
@@ -1037,48 +1287,30 @@ int S_pong(int sock)
 //
 
 
-//return 0->Ok else->Nok
-//out : nothing
-
+//server send information on clients and jobs
+//input: sock_c -> a connected socket towards the client
+//input: todo,inprogress,done,fail -> informations on jobs
+//input:  nthclients,tabclients -> informations on clients
+//output: nothing
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition ok
 int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64_t fail, int nthclients, struct id_client *tabclients)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"S_info(%i, %lu, %lu, %lu, %lu, %i, %p)\n",sock_c,todo,inprogress,done,fail,nthclients,tabclients);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int i;
 	size_t write_len = 0;
-	/*maybe faster? (less system call but memory copy)
-	int dsock = dup(sock_c);
-	FILE* fsock = fdopen(dsock,"w");
 	
-	write_len += fwrite(&todo, sizeof(uint64_t), 1, fsock);
-	write_len += fwrite(&inprogress, sizeof(uint64_t), 1, fsock);
-	write_len += fwrite(&done, sizeof(uint64_t), 1, fsock);
-	write_len += fwrite(&nthclients, sizeof(int), 1, fsock);
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	todo = htole64(todo);
+	inprogress = htole64(inprogress);
+	done = htole64(done);
+	fail = htole64(fail);
+	nthclients = htole32(nthclients);
+	#endif
 
-	if (write_len != 4)
-	{
-		fclose(fsock);
-		return(PLD_NOK);
-	}
-	
-	fflush(fsock);
-	
-	write_len = 0;
-	
-	for(i = 0; i < nthclients; i++)
-	{
-		write_len += fwrite(&(tabclients[i].c_addr), sizeof(struct sockaddr_in), 1, fsock);
-	}
-	
-	fflush(fsock);
-	fclose(fsock);
-	if (write_len != nthclients) return(PLD_NOK);
-	else return(PLD_OK);
-	*/
-	
 	write_len = write_sock(sock_c, &todo, sizeof(uint64_t));
 	if (write_len != 0) return(PLD_NOK);
 	write_len = write_sock(sock_c, &inprogress, sizeof(uint64_t));
@@ -1099,11 +1331,14 @@ int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64
 	else return(PLD_OK);
 }
 
-
+//client receive information on clients and jobs
+//input: sock -> a connected socket towards the server
+//output: nothing
+//return: PLD_NOK -> transmition error, PLD_OK -> transmition ok
 int C_info(int sock)
 {
 	#ifdef DEBUG
-	fprintf(stderr,"\033[31m");
+	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_info(%i)\n", sock);
 	fprintf(stderr,"\033[0m");	
 	#endif
@@ -1119,22 +1354,37 @@ int C_info(int sock)
 	char ip[256]; 
 
 	rt = read_sock(sock, &todo, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	todo = le64toh(todo);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	printf("Todo:\t%"PRIu64"\n",todo);
 
 	rt = read_sock(sock, &inprogress, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	inprogress = le64toh(inprogress);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	printf("Running:\t%"PRIu64"\n",inprogress);
 
 	rt = read_sock(sock, &done, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	done = le64toh(done);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	printf("Done:\t%"PRIu64"\n",done);
 	
 	rt = read_sock(sock, &fail, sizeof(uint64_t));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	fail = le64toh(fail);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	printf("Fail:\t%"PRIu64"\n",fail);
 	
 	rt = read_sock(sock, &nthclients, sizeof(int));
+	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+	nthclients = le32toh(nthclients);
+	#endif
 	if (rt != 0) return(PLD_NOK);
 	printf("Number of clients:\t%i\n",nthclients);
 

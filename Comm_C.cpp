@@ -139,11 +139,11 @@ int Comm_C::ping()
 	rt = C_ping(sock);
 	if (rt == PLD_OK)
 	{
-		printf("Ok server seems to be alive!");
+		printf("Ok server seems to be alive!\n");
 	}
 	else
 	{
-		printf("It seems that there is no server on %s::%s", hote, port);
+		printf("It seems that there is no server on %s::%s\n", hote, port);
 	}
 	return(0);
 }
