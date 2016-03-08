@@ -228,17 +228,17 @@ uint32_t Comm_S::get_port()
 
 double Comm_S::get_rtime()
 {
-	return(nfotime.rtime);
+	return((double)(nfotime.rtime/1000000.0));
 }
 
 double Comm_S::get_utime()
 {
-	return(nfotime.utime);
+	return((double)(nfotime.utime/1000000.0));
 }
 
 double Comm_S::get_ktime()
 {
-	return(nfotime.ktime);
+	return((double)(nfotime.ktime/1000000.0));
 }
 
 int Comm_S::get_nb_clients()

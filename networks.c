@@ -1085,9 +1085,9 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 	begin = (off_t)htole64((uint64_t) begin);
 	end = (off_t)htole64((uint64_t) end);
 	rt_value = (int)htole32((uint32_t) rt_value);
-	nfotime->utime = htole64_d(nfotime->utime);
-	nfotime->ktime = htole64_d(nfotime->ktime);
-	nfotime->rtime = htole64_d(nfotime->rtime);
+	nfotime->utime = htole64(nfotime->utime);
+	nfotime->ktime = htole64(nfotime->ktime);
+	nfotime->rtime = htole64(nfotime->rtime);
 	nfotime->isvalid = (int)htole32((uint32_t) nfotime->isvalid);
 	nfotime->padding = (int)htole32((uint32_t) nfotime->padding);
 	#if __SIZEOF_SIZE_T__ == 8
@@ -1167,9 +1167,9 @@ int S_put(int sock_c, off_t* begin, off_t* end, int* rt_value, struct infotime* 
 	if (rt != 0) return(PLD_NOK);
 	rt = read_sock(sock_c, nfotime, sizeof(struct infotime));
 	#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-	nfotime->utime = le64toh_d(nfotime->utime);
-	nfotime->ktime = le64toh_d(nfotime->ktime);
-	nfotime->rtime = le64toh_d(nfotime->rtime);
+	nfotime->utime = le64toh(nfotime->utime);
+	nfotime->ktime = le64toh(nfotime->ktime);
+	nfotime->rtime = le64toh(nfotime->rtime);
 	nfotime->isvalid = (int)le32toh((uint32_t) nfotime->isvalid);
 	nfotime->padding = (int)le32toh((uint32_t) nfotime->padding);
 	#endif

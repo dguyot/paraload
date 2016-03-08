@@ -7,9 +7,9 @@ int ticinfotime(struct infotime* nfotime)
 	struct timeval rtimer;
 	if ((gettimeofday(&rtimer, NULL) == 0) && (getrusage(RUSAGE_CHILDREN,&timer) == 0))
 	{
-		nfotime->rtime = (double)rtimer.tv_sec+((double)rtimer.tv_usec)/1000000.0;
-		nfotime->utime = (double)timer.ru_utime.tv_sec+((double)timer.ru_utime.tv_usec)/1000000.0;
-		nfotime->ktime = (double)timer.ru_stime.tv_sec+((double)timer.ru_stime.tv_usec)/1000000.0;
+		nfotime->rtime = UINT64_C(1000000) * (uint64_t)rtimer.tv_sec + (uint64_t)rtimer.tv_usec;
+		nfotime->utime = UINT64_C(1000000) * (uint64_t)timer.ru_utime.tv_sec + (uint64_t)timer.ru_utime.tv_usec;
+		nfotime->ktime = UINT64_C(1000000) * (uint64_t)timer.ru_stime.tv_sec + (uint64_t)timer.ru_stime.tv_usec;
 		nfotime->isvalid = 1;
 	}
 	else
@@ -27,17 +27,17 @@ int tacinfotime(struct infotime* nfotime)
 {
 	struct rusage timer;
 	struct timeval rtimer;
-	double trtime;
-	double tutime;
-	double tktime;
+	uint64_t trtime;
+	uint64_t tutime;
+	uint64_t tktime;
 	if ((gettimeofday(&rtimer, NULL) == 0) && (getrusage(RUSAGE_CHILDREN,&timer) == 0) && (nfotime->isvalid == 1))
 	{
 		trtime = nfotime->rtime;
 		tutime = nfotime->utime;
 		tktime = nfotime->ktime;
-		nfotime->rtime = ((double)rtimer.tv_sec + ((double)rtimer.tv_usec)/1000000.0) - trtime;
-		nfotime->utime = ((double)timer.ru_utime.tv_sec + ((double)timer.ru_utime.tv_usec)/1000000.0) - tutime;
-		nfotime->ktime = ((double)timer.ru_stime.tv_sec + ((double)timer.ru_stime.tv_usec)/1000000.0) - tktime;
+		nfotime->rtime = UINT64_C(1000000) * (uint64_t)rtimer.tv_sec + (uint64_t)rtimer.tv_usec - trtime;
+		nfotime->utime = UINT64_C(1000000) * (uint64_t)timer.ru_utime.tv_sec + (uint64_t)timer.ru_utime.tv_usec - tutime;
+		nfotime->ktime = UINT64_C(1000000) * (uint64_t)timer.ru_stime.tv_sec + (uint64_t)timer.ru_stime.tv_usec - tktime;
 	}
 	else
 	{

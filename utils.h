@@ -26,9 +26,9 @@ struct id_client
 
 struct infotime
 {
-	double utime;
-	double ktime;
-	double rtime;
+	uint64_t utime;
+	uint64_t ktime;
+	uint64_t rtime;
 	int isvalid;
 	int padding;//to align struct on 64 bits
 };
