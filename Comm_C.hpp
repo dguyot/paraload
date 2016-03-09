@@ -11,8 +11,6 @@ extern "C"{
 }
 
 
-
-
 class Comm_C
 {
 	private:
@@ -21,10 +19,8 @@ class Comm_C
 	off_t idx_end;
 	char* cmd;
 	char* chunk;
-	size_t chunk_size;
 	struct infotime nfotime;
 	char* data_c;
-	size_t data_size;
 	char* exe_cmd;
 	char* tmp_in;
 	char* tmp_out;
@@ -34,7 +30,9 @@ class Comm_C
 	int fail;
 	int rt_value;
 	int padding;//to align class on 64 bits
-
+	size_t chunk_size;//should be 32bits on 32 bits system
+	size_t data_size;//should be 32bits on 32 bits system
+	
 	public:
 	Comm_C(Cline* cline);
 	~Comm_C();

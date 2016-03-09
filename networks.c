@@ -827,7 +827,7 @@ int S_get(int sock_c, off_t begin, off_t end, size_t cmd_size, size_t size, cons
 {
 	#ifdef DEBUG
 	fprintf(stderr,"\033[36m");
-	fprintf(stderr,"S_get(%i, %llu, %llu, %llu, %llu, %p, %p)\n",sock_c,begin,end,cmd_size,size,cmd,chunk);
+	fprintf(stderr,"S_get(%i, %"PRIu64", %"PRIu64", %zu, %zu, %p, %p)\n",sock_c,begin,end,cmd_size,size,cmd,chunk);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char S_checksum[16];
@@ -928,7 +928,7 @@ int C_get(int sock, off_t* begin, off_t* end, char** cmd, char** chunk, size_t* 
 	#ifdef DEBUG
 	fprintf(stderr,"\033[36m");
 	fprintf(stderr,"C_get(%i, %p, %p, %p, %p, %p)\n",sock,begin,end,cmd,chunk,chunk_size);
-	fprintf(stderr,"C_get(%i, *%llu, *%llu, %p, %p, %p)\n",sock,*begin,*end,cmd,chunk,chunk_size);
+	fprintf(stderr,"C_get(%i, *%"PRIu64", *%"PRIu64", %p, %p, *%zu)\n",sock,*begin,*end,cmd,chunk,*chunk_size);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char S_checksum[16];
@@ -1042,7 +1042,7 @@ int C_put(int sock, off_t begin, off_t end, int rt_value, struct infotime* nfoti
 {
 	#ifdef DEBUG
 	fprintf(stderr,"\033[36m");
-	fprintf(stderr,"C_put(%i, %llu, %llu, %i, %p, %llu, %p)\n",sock,begin,end,rt_value,nfotime,size,data_c);
+	fprintf(stderr,"C_put(%i, %"PRIu64", %"PRIu64", %i, %p, %zu, %p)\n",sock,begin,end,rt_value,nfotime,size,data_c);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	unsigned char C_checksum[16];
@@ -1297,7 +1297,7 @@ int S_info(int sock_c, uint64_t todo, uint64_t inprogress, uint64_t done, uint64
 {
 	#ifdef DEBUG
 	fprintf(stderr,"\033[36m");
-	fprintf(stderr,"S_info(%i, %lu, %lu, %lu, %lu, %i, %p)\n",sock_c,todo,inprogress,done,fail,nthclients,tabclients);
+	fprintf(stderr,"S_info(%i, %"PRIu64", %"PRIu64", %"PRIu64", %"PRIu64", %i, %p)\n",sock_c,todo,inprogress,done,fail,nthclients,tabclients);
 	fprintf(stderr,"\033[0m");	
 	#endif
 	int i;

@@ -13,11 +13,11 @@ class Fetch
 	private:
 	Index *index;
 	Monitor *monitor;
+	std::streampos file_size;
+	std::streampos policy_limit;
 	std::vector <std::streampos>::size_type end_index;
 	std::vector <std::streampos>::size_type begin_index;
 	std::vector <std::streampos>::size_type size_index;
-	std::streampos file_size;
-	std::streampos policy_limit;
 	char* buffer;
 	int policy;
 	int padding;//to align class on 64 bits
