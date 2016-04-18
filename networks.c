@@ -1,6 +1,6 @@
 #include "networks.h"
-#define DEBUG
-#define DEBUG_LVL2
+//#define DEBUG
+//#define DEBUG_LVL2
 static struct epoll_event *events;
 static int epoll_time_wait;
 static int epoll_max_events;
@@ -635,7 +635,6 @@ int C_auth(int sock)
 	#else
 	client_id = getuid();
 	#endif
-	fprintf(stderr,"%d\n",client_id);
 	rt = write_sock(sock,&client_id,sizeof(uid_t));
 	
 	if (rt != 0) return(rt);

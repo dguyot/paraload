@@ -7,6 +7,7 @@
 #include "Comm_S.hpp"
 #include "Comm_C.hpp"
 #include "Monitor.hpp"
+#include "Tool.hpp"
 #include <iostream>
 #include <fstream>
 #include <signal.h>
@@ -442,6 +443,37 @@ int main(int argc,char** argv)
 		delete cline;
 		return(rt);
 	}
+	
+	if (cline->getcmd("tool") == "check")
+	{
+		Conf *C = new Conf(cline->getcmd("conf"),'=');
+		Tool *T = new Tool(cline->getcmd("log"), cline->getcmd("input"), cline->getcmd("output"), cline->getcmd("outsort"), C->getconf("sentinel"));
+		T->Read_log();
+		T->Read_input();
+		return(T->Check());
+	}
+	
+	if (cline->getcmd("tool") == "reorder")
+	{
+		Tool *T = new Tool(cline->getcmd("log"), cline->getcmd("input"), cline->getcmd("output"), cline->getcmd("outsort"), "");
+		T->Read_log();
+		T->Reorder();
+	}
+	
+	if (cline->getcmd("tool") == "time")
+	{
+		Tool *T = new Tool(cline->getcmd("log"), cline->getcmd("input"), cline->getcmd("output"), cline->getcmd("outsort"), "");
+		T->Read_log();
+		T->Time();
+	}
+	
+	if (cline->getcmd("tool") == "clients")
+	{
+		Tool *T = new Tool(cline->getcmd("log"), cline->getcmd("input"), cline->getcmd("output"), cline->getcmd("outsort"), "");
+		T->Read_log();
+		T->Clients();
+	}
+	
 	return(EXIT_FAILURE);
 }
 

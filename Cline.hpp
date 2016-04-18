@@ -27,6 +27,8 @@ class Cline
 	std::string report;
 	std::string fails;
 	std::string voidstring;
+	std::string tool;
+	std::string outsort;
 	public:
 	Cline(int argc,char **argv);
 	int check();

@@ -9,7 +9,7 @@ Cline::Cline(int argc,char **argv)
 {
 	int c;
 	int option_index = 0;
- 	struct option opt[19] =
+ 	struct option opt[21] =
     	{
 		{"input", 1, 0, (int)('i')},
 		{"output", 1, 0, (int)('o')},
@@ -29,6 +29,8 @@ Cline::Cline(int argc,char **argv)
 		{"bg", 0, 0, (int)('b')},
 		{"report", 1, 0, (int)('r')},
 		{"fails", 1, 0, (int)('f')},
+		{"tool", 1, 0, (int)('t')},
+		{"outsort", 1, 0, (int)('O')},
 		{0, 0, 0, 0},
 	};
 
@@ -51,9 +53,11 @@ Cline::Cline(int argc,char **argv)
 	report = "";
 	fails = "-1";
 	voidstring = "";
+	tool = "";
+	outsort = "";
 
 
-	while( (c = getopt_long(argc,argv,"i:o:C:h:p:l:S:scwv?VPIbr:f:",opt,&option_index)) != -1)
+	while( (c = getopt_long(argc,argv,"i:o:C:h:p:l:S:scwv?VPIbr:f:t:O:",opt,&option_index)) != -1)
     	{
 		switch(c)
 		{
@@ -111,6 +115,12 @@ Cline::Cline(int argc,char **argv)
 			case 'f' :
 				fails = optarg;
 				break;
+			case 't' :
+				tool = optarg;
+				break;
+			case 'O' :
+				outsort = optarg;
+				break;
 		}
 	}
 }
@@ -154,6 +164,10 @@ const string& Cline::getcmd(string what)
 	return report;
 	else if (what == "fails")
 	return fails;
+	else if (what == "tool")
+	return tool;
+	else if (what == "outsort")
+	return outsort;
 	else
 	return voidstring;
 }
@@ -161,6 +175,11 @@ const string& Cline::getcmd(string what)
 int Cline::check()
 {
 	int port_number;
+	ifstream config;
+	ifstream in;
+	ifstream ou;
+	ifstream lo;
+	
 	
 	if (help == "yes")
 	{
@@ -176,11 +195,13 @@ int Cline::check()
 	if ((client == "yes") && (server == "yes"))
 	{
 		cerr << "Make a choice: run a server with [--server] [-s] or a client with [--client] [-c]" << endl;
+		cerr << "More help with --help or -?" << endl;
 		return(1);
 	}
-	if ((client == "no") && (server == "no"))
+	if ((client == "no") && (server == "no") && (tool == ""))
 	{
 		cerr << "Make a choice: run a server with [--server] [-s] or a client with [--client] [-c]" << endl;
+		cerr << "More help with --help or -?" << endl;
 		return(1);
 	}
 	if (server == "yes")
@@ -195,6 +216,12 @@ int Cline::check()
 			cerr << "Please specify an input [--input] [-i]" << endl;
 			return(1);
 		}
+		in.open(input.c_str());
+		if (in.fail())
+		{
+			cerr << "Unable to find or read input file [--input] [-i]" << endl;
+			return(1);
+		}
 		if (output == "")
 		{
 			cerr << "Please specify an output [--output] [-o]" << endl;
@@ -205,10 +232,10 @@ int Cline::check()
 			cerr << "Please specify a log [--log] [-l]" << endl;
 			return(1);
 		}
-		ifstream config(conf.c_str());
-		if (!config)
+		config.open(conf.c_str());
+		if (config.fail())
 		{
-			cerr << "Unable to find or read configuration file " << conf << endl;
+			cerr << "Unable to find or read configuration file [--conf] [-C] default : paraload.conf" << conf << endl;
 			return(1);
 		}
 		port_number = stoi(port);
@@ -232,6 +259,89 @@ int Cline::check()
 			return(1);
 		}
 	}
+	if (tool == "check")
+	{
+		if (input == "")
+		{
+			cerr << "Please specify an input [--input] [-i]" << endl;
+			return(1);
+		}
+		in.open(input.c_str());
+		if (in.fail())
+		{
+			cerr << "Unable to find or read input file [--input] [-i]" << endl;
+			return(1);
+		}
+		if (log == "")
+		{
+			cerr << "Please specify a log [--log] [-l]" << endl;
+			return(1);
+		}
+		lo.open(log.c_str());
+		if (lo.fail())
+		{
+			cerr << "Unable to find or read log file [--log] [-l]" << endl;
+			return(1);
+		}
+		config.open(conf.c_str());
+		if (config.fail())
+		{
+			cerr << "Unable to find or read configuration file [--conf] [-C] default : paraload.conf" << conf << endl;
+			return(1);
+		}
+	}
+	if (tool == "time")
+	{
+		if (log == "")
+		{
+			cerr << "Please specify a log [--log] [-l]" << endl;
+			return(1);
+		}
+		lo.open(log.c_str());
+		if (lo.fail())
+		{
+			cerr << "Unable to find or read log file [--log] [-l]" << endl;
+			return(1);
+		}
+	}
+	if (tool == "reorder")
+	{
+		if (log == "")
+		{
+			cerr << "Please specify a log [--log] [-l]" << endl;
+			return(1);
+		}
+		lo.open(log.c_str());
+		if (lo.fail())
+		{
+			cerr << "Unable to find or read log file [--log] [-l]" << endl;
+			return(1);
+		}
+		if (output ==  "")
+		{
+			cerr << "Please specify an output [--out] [-o]" << endl;
+		}
+		ou.open(output.c_str());
+		if (ou.fail())
+		{
+			cerr << "Unable to find or read output file [--output] [-o]" << endl;
+			return(1);
+		}
+	}
+	if (tool == "clients")
+	{
+		if (log == "")
+		{
+			cerr << "Please specify a log [--log] [-l]" << endl;
+			return(1);
+		}
+		lo.open(log.c_str());
+		if (lo.fail())
+		{
+			cerr << "Unable to find or read log file [--log] [-l]" << endl;
+			return(1);
+		}
+	}
 	return(0);
 }
 
@@ -239,9 +349,9 @@ int Cline::check()
 void Cline::help_func()
 {
 	cout << "Run a server: line between {} are optional" << endl;
-	cout << "./paraload --server --port [10000-65535] --input [input_file] --output [output_file] --log [log_file] { --bg(background) -r [report_file] } {--conf [conf_file default:paraload.conf] }" << endl << endl;
+	cout << "./paraload --server(-s) --port(-p) [10000-65535] --input(-i) [input_file] --output(-o) [output_file] --log(-l) [log_file] { --bg(-b) (background) --report(-r) [report_file] } {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
 	cout << "Run a client:" << endl;
-	cout << "./paraload --client --port [ same as the server ] --host [ host of the server default:localhost ] --fails [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
+	cout << "./paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
 }
 
 

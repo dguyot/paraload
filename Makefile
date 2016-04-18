@@ -19,7 +19,7 @@ EXEC = paraload
 #the name of the c sources for compiling:
 C_SRC = utils.c networks.c md5.c
 #the name of the c++ sources for compiling:
-CPP_SRC = Cline.cpp Comm_C.cpp Comm_S.cpp Conf.cpp Fetch.cpp Index.cpp Monitor.cpp
+CPP_SRC = Cline.cpp Comm_C.cpp Comm_S.cpp Conf.cpp Fetch.cpp Index.cpp Monitor.cpp Tool.cpp
 #the name of the c objects for building final executable:
 C_OBJ = $(C_SRC:.c=.o)
 #the name of the cpp objects for building final executable:
