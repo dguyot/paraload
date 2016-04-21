@@ -63,7 +63,7 @@ static int server(Cline* cline)
 	streampos chunk_size;
 	streampos offout_b;
 	streampos offout_e;
-	std::vector<std::streampos>::size_type current_index;
+	std::vector<std::streampos>::size_type current_index = 0;
 	uint64_t current_round;
 	uint64_t nb_round;
 	uint64_t nb_entries;
@@ -156,16 +156,16 @@ static int server(Cline* cline)
 		switch (action)
 		{
 			case PLD_GET:
-			cerr << "BEFORE\tGET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "BEFORE\tGET" << "\t" << current_index << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_PUT:
-			cerr << "BEFORE\tPUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "BEFORE\tPUT" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_DEC:
-			cerr << "BEFORE\tDEC" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "BEFORE\tDEC" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_CON:
-			cerr << "BEFORE\tCON" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "BEFORE\tCON" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 		}
 		fprintf(stderr,"\033[0m");
@@ -252,16 +252,16 @@ static int server(Cline* cline)
 		switch (action)
 		{
 			case PLD_GET:
-			cerr << "AFTER\tGET" << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "AFTER\tGET" << "\t" << current_index << "\t" << fetch->Index_begin() << "\t" << fetch->Index_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_PUT:
-			cerr << "AFTER\tPUT" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "AFTER\tPUT" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_DEC:
-			cerr << "AFTER\tDEC" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "AFTER\tDEC" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 			case PLD_CON:
-			cerr << "AFTER\tCON" << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
+			cerr << "AFTER\tCON" << "\t" << current_index << "\t" << comm_s->get_idx_begin() << "\t" << comm_s->get_idx_end() << "\t" << monitor->count_todo() << "\t" << monitor->count_inprogress() << "\t" << monitor->count_done() << "\t" << monitor->count_fail() << endl;
 			break;
 		}
 		fprintf(stderr,"\033[0m");

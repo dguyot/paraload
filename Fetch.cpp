@@ -162,5 +162,12 @@ int Fetch::rewind(std::vector<std::streampos>::size_type offset)
 		end_index = offset;
 		return(0);
 	}
+	if (offset == (std::vector<std::streampos>::size_type)(-1))
+	{
+		cerr << "Rewind to index \t" << offset << endl;
+		begin_index = offset;
+		end_index = 0;
+		return(0);
+	}
 	return(1);
 }

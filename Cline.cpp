@@ -349,9 +349,17 @@ int Cline::check()
 void Cline::help_func()
 {
 	cout << "Run a server: line between {} are optional" << endl;
-	cout << "./paraload --server(-s) --port(-p) [10000-65535] --input(-i) [input_file] --output(-o) [output_file] --log(-l) [log_file] { --bg(-b) (background) --report(-r) [report_file] } {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
+	cout << "paraload --server(-s) --port(-p) [10000-65535] --input(-i) [input_file] --output(-o) [output_file] --log(-l) [log_file] { --bg(-b) (background) --report(-r) [report_file] } {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
 	cout << "Run a client:" << endl;
-	cout << "./paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
+	cout << "paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
+	cout << "Check integrity after a run:" << endl;
+	cout << "paraload --tool(-t) check --input(-i) [input_file] --log(-l) [log_file] {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
+	cout << "Reorder output with the same order as the input:" << endl;
+	cout << "paraload --tool(-t) reorder --output(-o) [output_file] --outsort(-O) [output_file sorted]" << endl << endl;
+	cout << "Get cumulated time of run (even if the run it is not completed):" << endl;
+	cout << "paraload --tool(-t) time --log(-l) [log_file]" << endl << endl;
+	cout << "Get informations about terminated computations on clients (even if the run it is not completed):" << endl;
+	cout << "paraload --tool(-t) clients --log(-l) [log_file]" << endl << endl;
 }
 
 
