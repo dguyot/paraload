@@ -1,3 +1,43 @@
+/*
+
+Copyright or © or Copr. Dominique GUYOT 2016
+
+dominique.guyot@univ-lyon1.fr
+
+This software is a computer program whose purpose is to make load balancing
+for very large data parallel computing.
+
+This software is governed by the CeCILL license under French law and
+abiding by the rules of distribution of free software.  You can  use, 
+modify and/ or redistribute the software under the terms of the CeCILL
+license as circulated by CEA, CNRS and INRIA at the following URL
+"http://www.cecill.info". 
+
+As a counterpart to the access to the source code and  rights to copy,
+modify and redistribute granted by the license, users are provided only
+with a limited warranty  and the software's author,  the holder of the
+economic rights,  and the successive licensors  have only  limited
+liability. 
+
+In this respect, the user's attention is drawn to the risks associated
+with loading,  using,  modifying and/or developing or reproducing the
+software by the user in light of its specific status of free software,
+that may mean  that it is complicated to manipulate,  and  that  also
+therefore means  that it is reserved for developers  and  experienced
+professionals having in-depth computer knowledge. Users are therefore
+encouraged to load and test the software's suitability as regards their
+requirements in conditions enabling the security of their systems and/or 
+data to be ensured and,  more generally, to use and operate it in the 
+same conditions as regards security. 
+
+The fact that you are presently reading this means that you have had
+knowledge of the CeCILL license and that you accept its terms.
+
+*/
+
+
+
+
 #include "Cline.hpp"
 #include <getopt.h>
 #include <iostream>
@@ -352,14 +392,20 @@ void Cline::help_func()
 	cout << "paraload --server(-s) --port(-p) [10000-65535] --input(-i) [input_file] --output(-o) [output_file] --log(-l) [log_file] { --bg(-b) (background) --report(-r) [report_file] } {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
 	cout << "Run a client:" << endl;
 	cout << "paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
+	cout << "Check if the server is responding:" << endl;
+	cout << "paraload --client(-c) --port(-p) [ same as the server ] --ping(-P)" << endl << endl;
+	cout << "Get informations about running clients:" << endl;
+	cout << "paraload --client(-c) --port(-p) [ same as the server ] --info(-I)" << endl << endl;
 	cout << "Check integrity after a run:" << endl;
 	cout << "paraload --tool(-t) check --input(-i) [input_file] --log(-l) [log_file] {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
 	cout << "Reorder output with the same order as the input:" << endl;
 	cout << "paraload --tool(-t) reorder --output(-o) [output_file] --outsort(-O) [output_file sorted]" << endl << endl;
-	cout << "Get cumulated time of run (even if the run it is not completed):" << endl;
+	cout << "Get cumulated time of run (even if the run is not completed):" << endl;
 	cout << "paraload --tool(-t) time --log(-l) [log_file]" << endl << endl;
-	cout << "Get informations about terminated computations on clients (even if the run it is not completed):" << endl;
+	cout << "Get informations about terminated computations on clients (even if the run is not completed):" << endl;
 	cout << "paraload --tool(-t) clients --log(-l) [log_file]" << endl << endl;
+	cout << "Print this:" << endl;
+	cout << "paraload --help(-?)" << endl << endl;
 }
 
 
