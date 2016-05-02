@@ -391,7 +391,7 @@ void Cline::help_func()
 	cout << "Run a server: line between {} are optional" << endl;
 	cout << "paraload --server(-s) --port(-p) [10000-65535] --input(-i) [input_file] --output(-o) [output_file] --log(-l) [log_file] { --bg(-b) (background) --report(-r) [report_file] } {--conf(-C) [conf_file default:paraload.conf] }" << endl << endl;
 	cout << "Run a client:" << endl;
-	cout << "paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)]" << endl << endl;
+	cout << "paraload --client(-c) --port(-p) [ same as the server ] --host(-h) [ host of the server default:localhost ] --fails(-f) [ max number of command fail allowed default:-1 (infinity)] --shm(-S) [folder for temporary files default:/dev/shm/]" << endl << endl;
 	cout << "Check if the server is responding:" << endl;
 	cout << "paraload --client(-c) --port(-p) [ same as the server ] --ping(-P)" << endl << endl;
 	cout << "Get informations about running clients:" << endl;
