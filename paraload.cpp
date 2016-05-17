@@ -419,7 +419,7 @@ static int client(Cline* cline)
 	signal(SIGINT, client_signal_handler);
 	signal(SIGPIPE, client_signal_handler);
 	signal(SIGQUIT, client_signal_handler);
-
+	signal(SIGHUP, client_signal_handler);
 	
 	if (sigsetjmp(stack_client_save,1) == 0)
 	{
