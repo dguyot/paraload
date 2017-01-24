@@ -1,35 +1,3 @@
-#ifndef NETWORKS_H
-#define NETWORKS_H
-
-#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <netdb.h>
-#include <sys/epoll.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <errno.h>
-#include "utils.h"
-#include "md5.h"
-
-#define TCP_KEEPIDLE_DEFAULT 7200
-#define TCP_KEEPINTVL_DEFAULT 75
-#define TCP_KEEPCNT_DEFAULT 9
-
-#define PLD_MAX_READ_LEN 4096
-#define PLD_MAX_WRITE_LEN 4096
-#define PLD_OPENED_FD_NOTSOCKET 24
-
-#define PLD_SIG_OK 0
 /*
 
 Copyright or © or Copr. Dominique GUYOT 2016
@@ -66,6 +34,40 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL license and that you accept its terms.
 
 */
+
+#ifndef NETWORKS_H
+#define NETWORKS_H
+
+#define _FILE_OFFSET_BITS 64 //to use very large files even on 32 bits systems
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <sys/epoll.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <errno.h>
+#include "utils.h"
+#include "md5.h"
+
+#define TCP_KEEPIDLE_DEFAULT 7200
+#define TCP_KEEPINTVL_DEFAULT 75
+#define TCP_KEEPCNT_DEFAULT 9
+
+#define PLD_MAX_READ_LEN 4096
+#define PLD_MAX_WRITE_LEN 4096
+#define PLD_OPENED_FD_NOTSOCKET 24
+
+#define PLD_SIG_OK 0
+
 
 
 #define PLD_TO_MANY_CLIENT 1
